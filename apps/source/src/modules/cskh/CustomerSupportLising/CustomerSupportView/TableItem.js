@@ -14,8 +14,8 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import StarIcon from "@mui/icons-material/Star";
-import jwtAxios from "@crema/services/auth/JWT";
 import { useCustomerSupportActionsContext } from "../../context/CustomerSupportContextProvider";
+import { putData } from "@crema/hooks/APIHooks";
 
 const StyledTableCell = styled(TableCell)(() => ({
   fontSize: 14,
@@ -49,17 +49,15 @@ const TableItem = ({ data, handleOpenAssign, onSelectContactsForDelete }) => {
   };
 
   const onChangeStatus = async (id) => {
-    try {
-      const response = await jwtAxios.put(`ticketMarkPriority`, {
-        TicketRequestId: id,
+    putData("ticketMarkPriority", infoViewActionsContext, {
+      TicketRequestId: id,
+    })
+      .then(() => {
+        getData();
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
-      if (response) {
-        infoViewActionsContext.showMessage(response.data.Message);
-      }
-      getData();
-    } catch (error) {
-      infoViewActionsContext.fetchError(error.message);
-    }
   };
 
   return (

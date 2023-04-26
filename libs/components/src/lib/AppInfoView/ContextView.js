@@ -1,9 +1,9 @@
-import AppMessageView from '../AppMessageView';
-import AppLoader from '../AppLoader';
+import AppMessageView from "../AppMessageView";
+import AppLoader from "../AppLoader";
 import {
   useInfoViewActionsContext,
   useInfoViewContext,
-} from '@crema/context/InfoViewContextProvider';
+} from "@crema/context/InfoViewContextProvider";
 
 const AppInfoViewContext = () => {
   const { error, loading, message } = useInfoViewContext();
@@ -12,7 +12,7 @@ const AppInfoViewContext = () => {
   const showMessage = () => {
     return (
       <AppMessageView
-        variant='success'
+        variant="success"
         message={message.toString()}
         clearInfoView={clearInfoView}
       />
@@ -22,7 +22,7 @@ const AppInfoViewContext = () => {
   const showError = () => {
     return (
       <AppMessageView
-        variant='error'
+        variant="error"
         message={error.toString()}
         clearInfoView={clearInfoView}
       />

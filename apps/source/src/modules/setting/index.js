@@ -1,36 +1,44 @@
-import React, { useEffect, useState } from "react";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
+import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import AppAnimate from "@crema/components/AppAnimate";
 import { AccountTabsWrapper } from "@crema/modules/MyProfile";
-import jwtAxios from "@crema/services/auth/JWT";
-import { useParams } from "react-router-dom";
 import SettingDetailForm from "./SettingDetailForm";
 import AppInfoView from "@crema/components/AppInfoView";
+import { getData } from "@crema/hooks/APIHooks";
+import {
+  useInfoViewActionsContext,
+  useInfoViewContext,
+} from "@crema/context/InfoViewContextProvider";
+
 const SettingDetailInfo = () => {
-  const [value, setValue] = React.useState(0);
+  const { loading } = useInfoViewContext();
+  const infoViewActionsContext = useInfoViewActionsContext();
   const [data, setData] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const getData = async () => {
-      const dataResult = await jwtAxios.get(`getDetail`);
-      setData(dataResult.data.data);
-      setIsLoading(false);
-    };
-    getData();
+    getDataDetail();
   }, []);
+
+  const getDataDetail = () => {
+    getData(`getDetail`, infoViewActionsContext)
+      .then(({ data }) => {
+        setData(data);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
+  };
+
   return (
     <>
-      <AccountTabsWrapper >
-        {isLoading ? (
+      <AccountTabsWrapper>
+        {loading ? (
           <></>
         ) : (
           <>
             <AppAnimate animation="transition.slideRightIn" delay={300}>
               <Box className="account-tabs-content">
-                {value === 0 && <SettingDetailForm settingConfig={data} />}
+                <SettingDetailForm settingConfig={data} />
               </Box>
             </AppAnimate>
           </>

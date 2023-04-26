@@ -2,25 +2,24 @@ import AppLoader from "@crema/components/AppLoader";
 import AppTooltip from "@crema/components/AppTooltip";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import IntlMessages from "@crema/helpers/IntlMessages";
-import jwtAxios from "@crema/services/auth/JWT";
 import { Box, Card } from "@mui/material";
 import { Formik } from "formik";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import * as yup from "yup";
 import UserGroupForm from "./AddUserGroup";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { getData, postData, putData } from "@crema/hooks/APIHooks";
+
 const validationSchema = yup.object({});
+
 const CreateUserGroup = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const infoViewActionsContext = useInfoViewActionsContext();
 
-  const [detail, setDetail] = useState({});
-  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detail, setDetail] = useState(null);
   const [codeUserGroup, setUserGroup] = useState("");
-  const [loadingGetCode, setLoadingGetCode] = useState(false);
-  const [loadingSubmit, setLoadingSubbmit] = useState(false);
 
   useEffect(() => {
     if (id !== "Create") {
@@ -30,66 +29,56 @@ const CreateUserGroup = () => {
     }
   }, []);
 
-  const getDataDetail = async () => {
-    try {
-      setLoadingDetail(true);
-      const dataResult = await jwtAxios.get(`userGroup/${id}`);
-      setDetail(dataResult.data.data);
-    } catch (error) {
-      infoViewActionsContext.fetchError(error.message);
-    } finally {
-      setLoadingDetail(false);
-    }
-  };
-
-  const getCodeCustomerGroup = async () => {
-    setLoadingGetCode(true);
-    jwtAxios
-      .post(`generationCode`, {
-        code: "GNV",
-      })
-      .then((request) => {
-        setUserGroup(request.data.data);
+  const getDataDetail = () => {
+    getData(`userGroup/${id}`, infoViewActionsContext)
+      .then(({ data }) => {
+        setDetail(data);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
+      });
+  };
+
+  const getCodeCustomerGroup = () => {
+    postData(`generationCode`, infoViewActionsContext, {
+      code: "GNV",
+    })
+      .then(({ data }) => {
+        setUserGroup(data);
       })
-      .finally(() => {
-        setLoadingGetCode(false);
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
   };
 
   const handleCreate = (data) => {
-    setLoadingSubbmit(true);
-    jwtAxios
-      .post("userGroup", data)
+    postData("userGroup", infoViewActionsContext, data)
       .then(() => {
-        // reCallAPI();
         navigate("/userGroup");
-        infoViewActionsContext.showMessage("Success!");
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
   };
 
   const handleEdit = (data) => {
-    setLoadingSubbmit(true);
-    jwtAxios
-      .put("userGroup", data)
-      .then(() => {
-        navigate("/userGroup");
-        infoViewActionsContext.showMessage("Edit Customer Group Success!");
+    putData("userGroup", infoViewActionsContext, data)
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
+  };
+
+  const loading = useMemo(
+    () => !(id === "Create" ? codeUserGroup : detail),
+    [codeUserGroup, detail, id]
+  );
+
+  const handleBack = (event) => {
+    event.preventDefault();
+    navigate("/userGroup");
   };
 
   return (
@@ -101,7 +90,7 @@ const CreateUserGroup = () => {
         component="span"
         mr={{ xs: 2, sm: 4 }}
         mb={4}
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
       >
         <AppTooltip title={<IntlMessages id="common.back" />}>
           <ArrowBackIcon
@@ -112,15 +101,15 @@ const CreateUserGroup = () => {
         </AppTooltip>
       </Box>
       <Card>
-        {loadingGetCode || loadingDetail ? (
+        {loading ? (
           <AppLoader />
         ) : (
           <Formik
             validateOnBlur={true}
             initialValues={{
-              id: detail.id ? detail.id : "",
-              Code: detail.Code ? detail.Code : codeUserGroup,
-              Name: detail.Name ? detail.Name : "",
+              id: detail?.id ? detail?.id : "",
+              Code: detail?.Code ? detail?.Code : codeUserGroup,
+              Name: detail?.Name ? detail?.Name : "",
             }}
             validationSchema={validationSchema}
             onSubmit={(data) => {
@@ -132,11 +121,7 @@ const CreateUserGroup = () => {
             }}
           >
             {({ values, setFieldValue }) => (
-              <UserGroupForm
-                values={values}
-                setFieldValue={setFieldValue}
-                loadingSubmit={loadingSubmit}
-              />
+              <UserGroupForm values={values} setFieldValue={setFieldValue} />
             )}
           </Formik>
         )}

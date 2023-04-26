@@ -2,9 +2,6 @@ import React from "react";
 import { RoutePermittedRole } from "@crema/constants/AppEnums";
 
 const User = React.lazy(() => import("../../modules/userList"));
-const UserDetail = React.lazy(() =>
-  import("../../modules/userList/userDetail")
-);
 const CreateUser = React.lazy(() =>
   import("../../modules/userList/CreateUser")
 );

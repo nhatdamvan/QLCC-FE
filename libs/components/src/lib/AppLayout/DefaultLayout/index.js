@@ -11,7 +11,6 @@ import AppSidebar from "./AppSidebar";
 import DefaultLayoutContainer from "./DefaultLayoutContainer";
 import { useLocation } from "react-router-dom";
 import PropsTypes from "prop-types";
-import { io } from "socket.io-client";
 
 const DefaultLayout = ({ routes, routesConfig }) => {
   const { footer, layoutType, headerType, footerType } = useLayoutContext();
@@ -21,27 +20,6 @@ const DefaultLayout = ({ routes, routesConfig }) => {
   const toggleNavCollapsed = () => {
     setNavCollapsed(!isNavCollapsed);
   };
-
-  function recevieAll(value) {
-    console.log(value);
-  }
-
-  function recevieOne(value) {
-    console.log(value);
-  }
-
-  useEffect(() => {
-    let socket = io.connect(process.env.NX_URL, {
-      query: "token=" + localStorage.getItem("token"),
-    });
-    socket.on("sendAll", recevieAll);
-    socket.on("sendOne", recevieOne);
-    return () => {
-      socket.off("sendAll", recevieAll);
-      socket.off("sendOne", recevieOne);
-      socket.disconnect();
-    };
-  }, []);
 
   useEffect(() => {
     if (isNavCollapsed) setNavCollapsed(!isNavCollapsed);

@@ -1,11 +1,5 @@
-import React, { useState } from "react";
-import {
-  alpha,
-  Box,
-  Button,
-  CircularProgress,
-  Typography,
-} from "@mui/material";
+import { useState } from "react";
+import { alpha, Box, CircularProgress, Typography } from "@mui/material";
 import Avatar from "@mui/material/Avatar";
 import AppGridContainer from "@crema/components/AppGridContainer";
 import Grid from "@mui/material/Grid";
@@ -19,7 +13,11 @@ import { styled } from "@mui/material/styles";
 import { Fonts } from "@crema/constants/AppEnums";
 import SaveIcon from "@mui/icons-material/Save";
 import { LoadingButton } from "@mui/lab";
-import jwtAxios from "@crema/services/auth/JWT";
+import { postData } from "@crema/hooks/APIHooks";
+import {
+  useInfoViewActionsContext,
+  useInfoViewContext,
+} from "@crema/context/InfoViewContextProvider";
 
 const AvatarViewWrapper = styled("div")(({ theme }) => {
   return {
@@ -54,8 +52,9 @@ const AvatarViewWrapper = styled("div")(({ theme }) => {
   };
 });
 
-const PersonalInfoForm = ({ values, setFieldValue, loadingSubmit }) => {
-  const [loadingUploadFile, setLoadingUploadingFile] = useState(false);
+const PersonalInfoForm = ({ values, setFieldValue }) => {
+  const { loading } = useInfoViewContext();
+  const infoViewActionsContext = useInfoViewActionsContext();
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: "image/*",
@@ -65,24 +64,21 @@ const PersonalInfoForm = ({ values, setFieldValue, loadingSubmit }) => {
     },
   });
 
-  const handleUploadFile = async (file) => {
-    setLoadingUploadingFile(true);
+  const handleUploadFile = (file) => {
     const formData = new FormData();
     formData.append("file", file[0]);
 
-    try {
-      const response = await jwtAxios.post("/uploadFile/AvatarFile", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+    postData(`uploadFile/AvatarFile`, infoViewActionsContext, formData, false, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+      .then(({ data }) => {
+        setFieldValue("AvatarFile", data[0]);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
-
-      setFieldValue("AvatarFile", response.data.data[0]);
-    } catch (error) {
-      console.log(error, "error");
-    } finally {
-      setLoadingUploadingFile(false);
-    }
   };
 
   return (
@@ -104,7 +100,7 @@ const PersonalInfoForm = ({ values, setFieldValue, loadingSubmit }) => {
           mb: { xs: 5, lg: 6 },
         }}
       >
-        {loadingUploadFile ? (
+        {loading ? (
           <CircularProgress size={76} />
         ) : (
           <AvatarViewWrapper {...getRootProps({ className: "dropzone" })}>
@@ -189,7 +185,6 @@ const PersonalInfoForm = ({ values, setFieldValue, loadingSubmit }) => {
               color="primary"
               variant="contained"
               type="submit"
-              loading={loadingSubmit}
               startIcon={<SaveIcon />}
             >
               <IntlMessages id="common.save" />
@@ -205,5 +200,4 @@ export default PersonalInfoForm;
 PersonalInfoForm.propTypes = {
   setFieldValue: PropTypes.func,
   values: PropTypes.object,
-  loadingSubmit: PropTypes.bool.isRequired,
 };

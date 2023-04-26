@@ -2,7 +2,6 @@ import { Box, TableCell, TableSortLabel } from "@mui/material";
 import TableHeader from "@crema/components/TableHeader";
 import IntlMessages from "@crema/helpers/IntlMessages";
 import { visuallyHidden } from "@mui/utils";
-import PropTypes from "prop-types";
 import {
   useSmsActionContext,
   useSmsContext,
@@ -18,26 +17,10 @@ const headCells = [
     label: <IntlMessages id="sms.name" />,
   },
   {
-    id: "Title",
-    label: <IntlMessages id="sms.titleTemplate" />,
-  },
-  {
     id: "action",
     label: "",
   },
 ];
-
-// TableHeading.propTypes = {
-//   onRequestSort: PropTypes.func.isRequired,
-//   order: PropTypes.oneOf(['asc', 'desc']).isRequired,
-//   orderBy: PropTypes.string.isRequired,
-// };
-
-// TableHeading.defaultProps = {
-//   onRequestSort: null,
-//   order: 'asc',
-//   orderBy: ''
-// };
 
 const TableHeading = () => {
   const { orderBy, order } = useSmsContext();

@@ -6,9 +6,6 @@ const CustomerDetail = React.lazy(() =>
   import("../../modules/customerList/CustomerDetail")
 );
 const CustomerGroup = React.lazy(() => import("../../modules/customerGroup"));
-const CreateCustomer = React.lazy(() =>
-  import("../../modules/customerList/CreateCustomer")
-);
 const CreateCustomerGroup = React.lazy(() =>
   import("../../modules/customerGroup/AddcustomerGroup")
 );

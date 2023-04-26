@@ -2,14 +2,15 @@ import AppLoader from "@crema/components/AppLoader";
 import AppTooltip from "@crema/components/AppTooltip";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import IntlMessages from "@crema/helpers/IntlMessages";
-import jwtAxios from "@crema/services/auth/JWT";
 import { Box, Card } from "@mui/material";
 import { Formik } from "formik";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import * as yup from "yup";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CreateSupportForm from "./CreateSupportForm";
+import { getData, postData, putData } from "@crema/hooks/APIHooks";
+import AppInfoView from "@crema/components/AppInfoView";
 
 const phoneRegExp =
   /^((\\+[1-9]{1,4}[ \\-]*)|(\\([0-9]{2,3}\\)[ \\-]*)|([0-9]{2,4})[ \\-]*)*?[0-9]{3,4}?[ \\-]*[0-9]{3,4}?$/;
@@ -41,15 +42,9 @@ const CreateCustomerSupport = () => {
   const infoViewActionsContext = useInfoViewActionsContext();
 
   const [codeCskh, setCodeCskh] = useState("");
-  const [loadingGetCode, setLoadingGetCode] = useState(false);
-  const [loadingSubmit, setLoadingSubbmit] = useState(false);
+  const [data, setData] = useState(null);
   const [channelRequest, setChannelRequest] = useState([]);
-  const [loadingChannelRequest, setLoadingChannelRequest] = useState(true);
-  const [data, setData] = useState({});
-  const [loading, setLoading] = useState(false);
-
   const [statusTicket, setStatusTicket] = useState([]);
-  const [loadingStatus, setLoadingStatus] = useState(false);
 
   useEffect(() => {
     getChannelRequest();
@@ -65,110 +60,93 @@ const CreateCustomerSupport = () => {
   }, []);
 
   const getDataDetail = async () => {
-    try {
-      setLoading(true);
-      const dataResult = await jwtAxios.get(`ticketRequest/${id}`);
-      setData(dataResult.data.data);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusTicket = async () => {
-    try {
-      setLoadingStatus(true);
-      const dataResult = await jwtAxios.get(
-        `getByGroupCode/StatusTicketRequestCode`
-      );
-      setStatusTicket(dataResult.data.datas);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoadingStatus(false);
-    }
-  };
-
-  const getCode = async () => {
-    setLoadingGetCode(true);
-    jwtAxios
-      .post(`generationCode`, {
-        code: "TICK",
-      })
-      .then((request) => {
-        setCodeCskh(request.data.data);
+    getData(`ticketRequest/${id}`, infoViewActionsContext)
+      .then(({ data }) => {
+        setData(data);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
+      });
+  };
+
+  const getStatusTicket = async () => {
+    getData("getByGroupCode/StatusTicketRequestCode", infoViewActionsContext)
+      .then(({ datas }) => {
+        setStatusTicket(datas);
       })
-      .finally(() => {
-        setLoadingGetCode(false);
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
+  };
+
+  const getCode = async () => {
+    postData(`generationCode`, infoViewActionsContext, {
+      code: "TICK",
+    })
+      .then(({ data }) => {
+        setCodeCskh(data);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
   };
 
   const getChannelRequest = async () => {
-    try {
-      setLoadingChannelRequest(true);
-      const dataResult = await jwtAxios.get(
-        `getByGroupCode/ChannelRequestCode`
-      );
-      setChannelRequest(
-        dataResult.data.datas.map((item) => {
-          return {
-            Code: item.Code,
-            Name: item.Name,
-            id: item.id,
-          };
-        })
-      );
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoadingChannelRequest(false);
-    }
+    getData("getByGroupCode/ChannelRequestCode", infoViewActionsContext)
+      .then(({ datas }) => {
+        setChannelRequest(
+          datas.map((item) => {
+            return {
+              Code: item.Code,
+              Name: item.Name,
+              id: item.id,
+            };
+          })
+        );
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
   };
 
   const handlesCreate = (data) => {
-    setLoadingSubbmit(true);
     const newTicket = {
       StatusTicketCode: "wait",
       ...data,
     };
-
-    jwtAxios
-      .post("ticketRequest", newTicket)
+    postData("ticketRequest", infoViewActionsContext, newTicket)
       .then(() => {
         navigate("/cskh");
-        infoViewActionsContext.showMessage("Ticket created successfully!");
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
   };
 
   const handleEdit = (data) => {
-    setLoadingSubbmit(true);
-
-    jwtAxios
-      .put("ticketRequest", {
-        ...data,
-        id: id,
-      })
-      .then(() => {
-        navigate("/cskh");
-        infoViewActionsContext.showMessage("Success!");
+    putData("ticketRequest", infoViewActionsContext, {
+      ...data,
+      id: id,
+    })
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
   };
+
+  const handleBack = (event) => {
+    event.preventDefault();
+    navigate("/cskh");
+  };
+
+  const loading = useMemo(
+    () =>
+      !(channelRequest.length && statusTicket.length) &&
+      !(id === "Create" ? codeCskh : data),
+    [channelRequest, statusTicket, codeCskh, data, id]
+  );
 
   return (
     <>
@@ -178,7 +156,7 @@ const CreateCustomerSupport = () => {
         }}
         component="span"
         mb={4}
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
       >
         <AppTooltip title={<IntlMessages id="common.back" />}>
           <ArrowBackIcon
@@ -189,26 +167,26 @@ const CreateCustomerSupport = () => {
         </AppTooltip>
       </Box>
       <Card>
-        {loadingGetCode || loadingStatus || loadingChannelRequest || loading ? (
+        {loading ? (
           <AppLoader />
         ) : (
           <Formik
             validateOnBlur={true}
             initialValues={{
-              id: data.id ? data.id : "",
-              Code: data.Code ? data.Code : codeCskh,
-              RequestTitle: data.RequestTitle ? data.RequestTitle : "",
-              Name: data.Name ? data.Name : "",
-              Email: data.Email ? data.Email : "",
-              Address: data.Address ? data.Address : "",
-              Note: data.Note ? data.Note : "",
-              Phonenumber: data.Phonenumber ? data.Phonenumber : "",
-              ChannelRequestCode: data.ChannelRequestCode
-                ? data.ChannelRequestCode
-                : channelRequest[0].Code,
-              StatusTicketCode: data.StatusTicketCode
-                ? data.StatusTicketCode
-                : statusTicket[0].Code,
+              id: data?.id ? data?.id : "",
+              Code: data?.Code ? data?.Code : codeCskh,
+              RequestTitle: data?.RequestTitle ? data?.RequestTitle : "",
+              Name: data?.Name ? data?.Name : "",
+              Email: data?.Email ? data?.Email : "",
+              Address: data?.Address ? data?.Address : "",
+              Note: data?.Note ? data?.Note : "",
+              Phonenumber: data?.Phonenumber ? data?.Phonenumber : "",
+              ChannelRequestCode: data?.ChannelRequestCode
+                ? data?.ChannelRequestCode
+                : channelRequest[0]?.Code,
+              StatusTicketCode: data?.StatusTicketCode
+                ? data?.StatusTicketCode
+                : statusTicket[0]?.Code,
             }}
             validationSchema={validationSchema}
             onSubmit={(data) => {
@@ -223,7 +201,6 @@ const CreateCustomerSupport = () => {
               <CreateSupportForm
                 values={values}
                 setFieldValue={setFieldValue}
-                loadingSubmit={loadingSubmit}
                 channelRequest={channelRequest}
                 statusTicket={statusTicket}
               />
@@ -231,6 +208,7 @@ const CreateCustomerSupport = () => {
           </Formik>
         )}
       </Card>
+      <AppInfoView />
     </>
   );
 };

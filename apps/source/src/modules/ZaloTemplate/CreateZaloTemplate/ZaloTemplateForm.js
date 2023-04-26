@@ -4,13 +4,7 @@ import ReactQuill from "react-quill";
 import { styled } from "@mui/material/styles";
 import { useIntl } from "react-intl";
 import { Form } from "formik";
-import {
-  Box,
-  Button,
-  FormControlLabel,
-  Grid,
-  LinearProgress,
-} from "@mui/material";
+import { Box, FormControlLabel, Grid, LinearProgress } from "@mui/material";
 import IntlMessages from "@crema/helpers/IntlMessages";
 import { Fonts } from "@crema/constants";
 import AppTextField from "@crema/components/AppTextField";
@@ -20,9 +14,13 @@ import { useDropzone } from "react-dropzone";
 import UploadModern from "libs/modules/src/lib/thirdParty/reactDropzone/components/UploadModern";
 import AppGrid from "@crema/components/AppGrid";
 import PreviewThumb from "libs/modules/src/lib/thirdParty/reactDropzone/components/PreviewThumb";
-import jwtAxios from "@crema/services/auth/JWT";
 import SaveIcon from "@mui/icons-material/Save";
 import { Android12Switch } from "libs/modules/src/lib/muiComponents/inputs/Switches/Customization";
+import { postData } from "@crema/hooks/APIHooks";
+import {
+  useInfoViewActionsContext,
+  useInfoViewContext,
+} from "@crema/context/InfoViewContextProvider";
 
 const ReactQuillWrapper = styled(ReactQuill)(() => {
   return {
@@ -37,19 +35,21 @@ const ReactQuillWrapper = styled(ReactQuill)(() => {
   };
 });
 
-const ZaloTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
+const ZaloTemplateForm = ({ values, setFieldValue }) => {
   const { messages } = useIntl();
-  const [loadingUploadFile, setLoadingUploadingFile] = useState(false);
+  const { loading } = useInfoViewContext();
+  const infoViewActionsContext = useInfoViewActionsContext();
+
   const [uploadedFiles, setUploadedFiles] = useState(
     values.Files
       ? [
-        {
-          id: values.Files.id,
-          path: values.Files.filename,
-          size: values.Files.length,
-          preview: `https://crmic2-dev.vercel.app/file/${values.Files.id}`,
-        },
-      ]
+          {
+            id: values.Files.id,
+            path: values.Files.filename,
+            size: values.Files.length,
+            preview: `https://crmic2-dev.vercel.app/file/${values.Files.id}`,
+          },
+        ]
       : []
   );
   const [isEdit, setIsEdit] = useState(values?.id ? true : false);
@@ -83,35 +83,33 @@ const ZaloTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
   };
 
   const handleUploadFile = async (file) => {
-    setLoadingUploadingFile(true);
+    setUploadedFiles(dropzone.acceptedFiles);
     const formData = new FormData();
     formData.append("file", file[0]);
 
-    try {
-      const response = await jwtAxios.post("/uploadFile/zaloFile", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+    postData(`uploadFile/zaloFile`, infoViewActionsContext, formData, false, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+      .then(({ data }) => {
+        setFieldValue("Files", data[0]);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
 
-      const responseZalo = await jwtAxios.post(
-        "/uploadFileImageZalo",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      setUploadedFiles(dropzone.acceptedFiles);
-      setFieldValue("Image", responseZalo.data.data[0]);
-      setFieldValue("Files", response.data.data[0]);
-    } catch (error) {
-      console.log(error, "error");
-    } finally {
-      setLoadingUploadingFile(false);
-    }
+    postData(`uploadFileImageZalo`, infoViewActionsContext, formData, false, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+      .then(({ data }) => {
+        setFieldValue("Image", data[0]);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
   };
 
   const handleChange = (event) => {
@@ -229,7 +227,7 @@ const ZaloTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
             >
               <IntlMessages id="common.file" />
             </Box>
-            {loadingUploadFile ? (
+            {loading ? (
               <LinearProgress color="inherit" />
             ) : (
               <>
@@ -244,7 +242,7 @@ const ZaloTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
         </Grid>
 
         <Grid item xs={12} md={6}>
-          {loadingUploadFile || !uploadedFiles[0]?.path ? (
+          {loading || !uploadedFiles[0]?.path ? (
             <></>
           ) : (
             <AppGrid
@@ -258,7 +256,7 @@ const ZaloTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
               renderRow={(file, index) => (
                 <PreviewThumb
                   file={file}
-                  onDeleteUploadFile={isEdit ? () => { } : onDeleteUploadFile}
+                  onDeleteUploadFile={isEdit ? () => {} : onDeleteUploadFile}
                   key={index + file.path}
                 />
               )}
@@ -282,7 +280,6 @@ const ZaloTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
               color="primary"
               variant="contained"
               type="submit"
-              loading={loadingSubmit}
               startIcon={<SaveIcon />}
               disabled={isEdit}
             >
@@ -300,5 +297,4 @@ export default ZaloTemplateForm;
 ZaloTemplateForm.propTypes = {
   values: PropTypes.object.isRequired,
   setFieldValue: PropTypes.func,
-  loadingSubmit: PropTypes.bool.isRequired,
 };

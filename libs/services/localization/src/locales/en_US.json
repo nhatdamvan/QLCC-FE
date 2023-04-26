@@ -264,6 +264,7 @@
   "common.likes": "Likes",
   "common.comments": "Comments",
   "common.download": "Download",
+  "common.downloadTemplate": "Download template",
   "common.next": "Next",
   "common.edit": "Edit",
   "common.tag": "Tag",
@@ -794,5 +795,8 @@
   "marketing.startDate": "Start Date",
   "marketing.endDate": "End date",
   "marketing.template": "Template",
-  "permissions.list": "permission list"
+  "permissions.list": "permission list",
+  "sidebar.apps.cskh": "Customer care",
+  "sidebar.apps.cskh.ticket": "Request reception",
+  "sidebar.apps.cskh.chat": "Chat"
 }

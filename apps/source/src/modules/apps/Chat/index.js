@@ -1,30 +1,20 @@
-import React, { useState } from 'react';
-import { useIntl } from 'react-intl';
-import AppsContainer from '@crema/components/AppsContainer';
+import React, { useState } from "react";
+import { useIntl } from "react-intl";
+import AppsContainer from "@crema/components/AppsContainer";
 
-import ChatContent from './ChatContent';
-import ChatContextProvider from '../context/ChatContextProvider';
-import ChatSideBar from './ChatSideBar';
+import ChatContent from "./ChatContent";
+import ChatSideBar from "./ChatSideBar";
+import ChatContextProvider from "@crema/context/ChatContextProvider";
 
 const Chat = () => {
-  const [selectedUser, setSelectedUser] = useState(undefined);
-
   const { messages } = useIntl();
   return (
     <ChatContextProvider>
       <AppsContainer
-        title={messages['chatApp.chat'].toString()}
-        sidebarContent={
-          <ChatSideBar
-            selectedUser={selectedUser}
-            setSelectedUser={setSelectedUser}
-          />
-        }
+        title={messages["chatApp.chat"].toString()}
+        sidebarContent={<ChatSideBar />}
       >
-        <ChatContent
-          selectedUser={selectedUser}
-          setSelectedUser={setSelectedUser}
-        />
+        <ChatContent />
       </AppsContainer>
     </ChatContextProvider>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import moment from "moment";
 import PropTypes from "prop-types";
@@ -9,12 +9,14 @@ import { useAuthUser } from "@crema/hooks/AuthHooks";
 import SimpleBarReact from "simplebar-react";
 
 import { styled } from "@mui/material/styles";
-import { postDataApi, putDataApi, useGetDataApi } from "@crema/hooks/APIHooks";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
-import { MessageType } from "@crema/fakedb/chat/connectionList";
-import { Header, MessagesList, SendMessage } from "@crema/modules/apps/Chat";
-import { useChatActionsContext } from "../../../context/ChatContextProvider";
+import { MessagesList, SendMessage } from "@crema/modules/apps/Chat";
 import UserInfo from "libs/modules/src/lib/apps/Chat/ChatSideBar/UserInfo";
+import {
+  useChatActionsContext,
+  useChatContext,
+} from "@crema/context/ChatContextProvider";
+import { postData } from "@crema/hooks/APIHooks";
 
 const ScrollbarWrapper = styled(SimpleBarReact)(() => {
   return {
@@ -33,133 +35,137 @@ const ScrollChatNoMainWrapper = styled("div")(() => {
   };
 });
 
-const ChatViewContainer = ({ selectedUser, setSelectedUser }) => {
-  const { setConnectionData } = useChatActionsContext();
-  const [message, setMessage] = useState("");
-  const [isEdit, setIsEdit] = useState(false);
+const ChatViewContainer = ({ selectedUser, loadingMessageList }) => {
+  const { messageList } = useChatContext();
+  const { setMessageList } = useChatActionsContext();
   const infoViewActionsContext = useInfoViewActionsContext();
-  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [message, setMessage] = useState("");
   const { user } = useAuthUser();
 
   let _scrollBarRef = useRef();
-  const [{ apiData: userMessages }, { setQueryParams, setData }] =
-    useGetDataApi("/api/chatApp/connection/messages", {}, {}, false);
 
   useEffect(() => {
-    setQueryParams({ id: selectedUser?.channelId });
-  }, [selectedUser?.channelId]);
-
-  useEffect(() => {
-    if (
-      userMessages &&
-      userMessages.messageData &&
-      userMessages.messageData.length > 0
-    ) {
+    if (messageList && messageList.length > 0) {
       if (_scrollBarRef?.current) {
         const scrollEl = _scrollBarRef.current.getScrollElement();
         scrollEl.scrollTop = scrollEl.scrollHeight;
       }
     }
-  }, [userMessages, _scrollBarRef]);
+  }, [messageList, _scrollBarRef]);
 
-  const sendFileMessage = (fileMessage) => {
-    const data = {
-      ...fileMessage,
-      sender: user.id,
-      time: moment().format("llll"),
-    };
-    postDataApi("/api/chatApp/message", infoViewActionsContext, {
-      channelId: selectedUser?.channelId,
-      message: data,
+  const sendFileMessage = (fileMessage, type) => {
+    const formData = new FormData();
+    formData.append("file", fileMessage[0]);
+
+    try {
+      let response;
+      if (type === "image") {
+        postData(
+          `uploadFileImageZalo`,
+          infoViewActionsContext,
+          formData,
+          false,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        )
+          .then((res) => {
+            response = res;
+          })
+          .catch((error) => {
+            infoViewActionsContext.fetchError(error.message);
+          });
+      } else {
+        postData(`uploadFileZalo`, infoViewActionsContext, formData, false, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+          .then((res) => {
+            response = res;
+          })
+          .catch((error) => {
+            infoViewActionsContext.fetchError(error.message);
+          });
+      }
+
+      setMessageList([
+        ...messageList,
+        {
+          CreatedDate: moment().toString(),
+          IsDeleted: false,
+          IsSender: true,
+          Message: {
+            attachments: [
+              {
+                payload: {
+                  url: "",
+                  name: "",
+                  thumbnail: "",
+                },
+                type: type,
+              },
+            ],
+            msg_id: moment().toString(),
+            // todo
+          },
+          MessageZaloId: data.data.message_id,
+          Sender: selectedUser?.Sender,
+          UpdatedDate: moment().toString(),
+          id: moment().toString(),
+        },
+      ]);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const submitMes = (message = "", image = "", file = "") => {
+    postData(`sendMessageZalo`, infoViewActionsContext, {
+      Sender: selectedUser?.Sender,
+      QuoteMessageId: "",
+      Message: {
+        Text: message,
+        Image: image,
+        Sticker: "",
+        File: file,
+      },
     })
-      .then((data) => {
-        setData(data?.userMessages);
-        setConnectionData(data?.connectionData);
-        infoViewActionsContext.showMessage("Message Added Successfully!");
+      .then((res) => {
+        return res;
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
       });
+
+    return null;
   };
 
   const onSend = (message) => {
-    const data = {
-      ...selectedMessage,
-      message,
-      message_type: MessageType.TEXT,
-      sender: user.id,
-      time: moment().format("llll"),
-    };
-
-    if (isEdit) {
-      data.edited = true;
-      putDataApi("/api/chatApp/message", infoViewActionsContext, {
-        channelId: selectedUser?.channelId,
-        message: data,
-      })
-        .then((data) => {
-          setData(data?.userMessages);
-          setConnectionData(data?.connectionData);
-          infoViewActionsContext.showMessage("Message Edited Successfully!");
-          setMessage("");
-          setIsEdit(false);
-          setSelectedMessage(null);
-        })
-        .catch((error) => {
-          infoViewActionsContext.fetchError(error.message);
-        });
-    } else {
-      postDataApi("/api/chatApp/message", infoViewActionsContext, {
-        channelId: selectedUser?.channelId,
-        message: data,
-      })
-        .then((data) => {
-          setMessage("");
-          setData(data?.userMessages);
-          setConnectionData(data?.connectionData);
-          infoViewActionsContext.showMessage("Message Added Successfully!");
-        })
-        .catch((error) => {
-          infoViewActionsContext.fetchError(error.message);
-        });
+    try {
+      const { data } = submitMes(message);
+      setMessage("");
+      setMessageList([
+        ...messageList,
+        {
+          CreatedDate: moment().toString(),
+          IsDeleted: false,
+          IsSender: true,
+          Message: {
+            msg_id: data.data.message_id,
+            text: message,
+          },
+          MessageZaloId: data.data.message_id,
+          Sender: selectedUser?.Sender,
+          UpdatedDate: moment().toString(),
+          id: moment().toString(),
+        },
+      ]);
+    } catch (error) {
+      infoViewActionsContext.fetchError(error.message);
     }
-  };
-
-  const onClickEditMessage = (data) => {
-    if (data.message_type === MessageType.TEXT) {
-      setIsEdit(true);
-      setMessage(data.message);
-      setSelectedMessage(data);
-    }
-  };
-
-  const deleteMessage = (messageId) => {
-    postDataApi("/api/chatApp/delete/message", infoViewActionsContext, {
-      channelId: selectedUser?.channelId,
-      messageId,
-    })
-      .then((data) => {
-        setData(data?.userMessages);
-        setConnectionData(data?.connectionData);
-        infoViewActionsContext.showMessage("Message Deleted Successfully!");
-      })
-      .catch((error) => {
-        infoViewActionsContext.fetchError(error.message);
-      });
-  };
-
-  const deleteConversation = () => {
-    postDataApi("/api/chatApp/delete/user/messages", infoViewActionsContext, {
-      channelId: selectedUser?.channelId,
-    })
-      .then((data) => {
-        setSelectedUser(undefined);
-        setConnectionData(data);
-        infoViewActionsContext.showMessage("Chat Deleted Successfully!");
-      })
-      .catch((error) => {
-        infoViewActionsContext.fetchError(error.message);
-      });
   };
 
   return (
@@ -183,15 +189,17 @@ const ChatViewContainer = ({ selectedUser, setSelectedUser }) => {
         /> */}
       </AppsHeader>
 
-      {userMessages && user ? (
+      {messageList && user ? (
         <ScrollbarWrapper ref={_scrollBarRef}>
-          <MessagesList
-            userMessages={userMessages}
-            authUser={user}
-            selectedUser={selectedUser}
-            onClickEditMessage={onClickEditMessage}
-            deleteMessage={deleteMessage}
-          />
+          {loadingMessageList ? (
+            <></>
+          ) : (
+            <MessagesList
+              messageList={messageList}
+              authUser={user}
+              selectedUser={selectedUser}
+            />
+          )}
         </ScrollbarWrapper>
       ) : (
         <ScrollChatNoMainWrapper>
@@ -202,7 +210,8 @@ const ChatViewContainer = ({ selectedUser, setSelectedUser }) => {
               color: "grey.500",
             }}
           >
-            <IntlMessages id="chatApp.sayHi" /> {selectedUser.name}
+            <IntlMessages id="chatApp.sayHi" />{" "}
+            {selectedUser?.SenderInfo?.display_name}
           </Box>
         </ScrollChatNoMainWrapper>
       )}
@@ -212,6 +221,8 @@ const ChatViewContainer = ({ selectedUser, setSelectedUser }) => {
           currentMessage={message}
           sendFileMessage={sendFileMessage}
           onSendMessage={onSend}
+          setMessageList={setMessageList}
+          messageList={messageList}
         />
       </AppsFooter>
     </Box>
@@ -224,6 +235,5 @@ ChatViewContainer.defaultProps = {};
 
 ChatViewContainer.propTypes = {
   selectedUser: PropTypes.object.isRequired,
-  setConnectionData: PropTypes.func,
-  setSelectedUser: PropTypes.func,
+  loadingMessageList: PropTypes.bool.isRequired,
 };

@@ -1,17 +1,10 @@
-import React from 'react';
-import Box from '@mui/material/Box';
-import PropTypes from 'prop-types';
-import SenderMessageItem from './SenderMessageItem';
-import ReceiverMessageItem from './ReceiverMessageItem';
-import AppList from '@crema/components/AppList';
+import Box from "@mui/material/Box";
+import PropTypes from "prop-types";
+import SenderMessageItem from "./SenderMessageItem";
+import ReceiverMessageItem from "./ReceiverMessageItem";
+import AppList from "@crema/components/AppList";
 
-const MessageList = ({
-  userMessages,
-  authUser,
-  selectedUser,
-  onClickEditMessage,
-  deleteMessage,
-}) => {
+const MessageList = ({ authUser, selectedUser, messageList }) => {
   return (
     <Box
       sx={{
@@ -21,25 +14,21 @@ const MessageList = ({
     >
       <AppList
         animation="transition.slideUpIn"
-        data={userMessages.messageData}
+        data={messageList}
         renderRow={(item, index) => {
-          if (item.sender === authUser.id) {
+          if (item.IsSender) {
             return (
               <SenderMessageItem
                 authUser={authUser}
                 item={item}
                 key={item.id}
-                onClickEditMessage={onClickEditMessage}
-                deleteMessage={deleteMessage}
                 isPreviousSender={
-                  index > 0 &&
-                  item.sender === userMessages.messageData[index - 1].sender
+                  index > 0 && item.IsSender === messageList[index - 1].IsSender
                 }
                 isLast={
-                  (index + 1 < userMessages.messageData.length &&
-                    item.sender !==
-                      userMessages.messageData[index + 1].sender) ||
-                  index + 1 === userMessages.messageData.length
+                  (index + 1 < messageList.length &&
+                    item.IsSender !== messageList[index + 1].IsSender) ||
+                  index + 1 === messageList.length
                 }
               />
             );
@@ -50,14 +39,12 @@ const MessageList = ({
                 item={item}
                 key={item.id}
                 isPreviousSender={
-                  index > 0 &&
-                  item.sender === userMessages.messageData[index - 1].sender
+                  index > 0 && item.IsSender === messageList[index - 1].IsSender
                 }
                 isLast={
-                  (index + 1 < userMessages.messageData.length &&
-                    item.sender !==
-                      userMessages.messageData[index + 1].sender) ||
-                  index + 1 === userMessages.messageData.length
+                  (index + 1 < messageList.length &&
+                    item.IsSender !== messageList[index + 1].IsSender) ||
+                  index + 1 === messageList.length
                 }
               />
             );
@@ -73,9 +60,7 @@ export default MessageList;
 MessageList.defaultProps = {};
 
 MessageList.propTypes = {
-  userMessages: PropTypes.object.isRequired,
+  messageList: PropTypes.array.isRequired,
   authUser: PropTypes.object.isRequired,
   selectedUser: PropTypes.object.isRequired,
-  onClickEditMessage: PropTypes.func,
-  deleteMessage: PropTypes.func,
 };

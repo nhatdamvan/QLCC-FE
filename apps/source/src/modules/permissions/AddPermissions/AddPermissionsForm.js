@@ -1,18 +1,15 @@
-
 import PropTypes from "prop-types";
 import { Form } from "formik";
 import { Box, Button, FormControlLabel, Grid } from "@mui/material";
 import { Fonts } from "@crema/constants";
 import IntlMessages from "@crema/helpers/IntlMessages";
 import AppTextField from "@crema/components/AppTextField";
-import { LoadingButton } from "@mui/lab";
 import SaveIcon from "@mui/icons-material/Save";
 import "react-quill/dist/quill.snow.css";
 import { useState } from "react";
 import { Android12Switch } from "libs/modules/src/lib/muiComponents/inputs/Switches/Customization";
 
-
-const PermissionForm = ({ values, setFieldValue, loadingSubmit }) => {
+const PermissionForm = ({ values }) => {
   const [isEdit, setIsEdit] = useState(values?.id ? true : false);
 
   const handleChange = (event) => {
@@ -96,32 +93,19 @@ const PermissionForm = ({ values, setFieldValue, loadingSubmit }) => {
               textAlign: "right",
             }}
           >
-            {loadingSubmit ? (
-              <LoadingButton
-                sx={{
-                  position: "relative",
-                  minWidth: 100,
-                }}
-                variant="contained"
-                loading={true}
-              >
-                <IntlMessages id="common.saveChanges" />
-              </LoadingButton>
-            ) : (
-              <Button
-                sx={{
-                  position: "relative",
-                  minWidth: 100,
-                }}
-                color="primary"
-                variant="contained"
-                type="submit"
-                startIcon={<SaveIcon />}
-                disabled={isEdit}
-              >
-                <IntlMessages id="common.save" />
-              </Button>
-            )}
+            <Button
+              sx={{
+                position: "relative",
+                minWidth: 100,
+              }}
+              color="primary"
+              variant="contained"
+              type="submit"
+              startIcon={<SaveIcon />}
+              disabled={isEdit}
+            >
+              <IntlMessages id="common.save" />
+            </Button>
           </Box>
         </Grid>
       </Grid>
@@ -134,5 +118,4 @@ export default PermissionForm;
 PermissionForm.propTypes = {
   values: PropTypes.object.isRequired,
   setFieldValue: PropTypes.func,
-  loadingSubmit: PropTypes.bool.isRequired,
 };

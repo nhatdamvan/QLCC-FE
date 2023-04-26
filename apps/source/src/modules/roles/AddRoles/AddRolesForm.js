@@ -11,7 +11,6 @@ import {
 } from "@mui/material";
 import { Form } from "formik";
 import PropTypes from "prop-types";
-import { LoadingButton } from "@mui/lab";
 import SaveIcon from "@mui/icons-material/Save";
 import SearchIcon from "@mui/icons-material/Search";
 import "react-quill/dist/quill.snow.css";
@@ -24,12 +23,7 @@ import {
 } from "../../permissions/context/PermissionsContextProvider";
 import AppSelectItemDialog from "@crema/components/AppSelectItemDialog";
 
-const RolesForm = ({
-  values,
-  loadingSubmit,
-  selectedPermissions,
-  setSelectedPermissions,
-}) => {
+const RolesForm = ({ values, selectedPermissions, setSelectedPermissions }) => {
   const { messages } = useIntl();
   const {
     loading: loadingPermissions,
@@ -42,7 +36,10 @@ const RolesForm = ({
     setPage: setPage,
     getData: getPermisstions,
   } = usePermissionsActionContext();
+
   const [isOpenPermissonsDialog, setIsOpenPermissionsDialog] = useState(false);
+  const [isEdit, setIsEdit] = useState(values?.id ? true : false);
+
   const handleOpenPermissonsDialog = () => {
     setIsOpenPermissionsDialog(true);
   };
@@ -50,7 +47,6 @@ const RolesForm = ({
   const handleClosePermissonsDialog = () => {
     setIsOpenPermissionsDialog(false);
   };
-  const [isEdit, setIsEdit] = useState(values?.id ? true : false);
 
   const handleChange = (event) => {
     setIsEdit(!event.target.checked);
@@ -188,33 +184,20 @@ const RolesForm = ({
               textAlign: "right",
             }}
           >
-            {loadingSubmit ? (
-              <LoadingButton
-                sx={{
-                  position: "relative",
-                  minWidth: 100,
-                }}
-                variant="contained"
-                loading={true}
-              >
-                <IntlMessages id="common.saveChanges" />
-              </LoadingButton>
-            ) : (
-              <Button
-                sx={{
-                  position: "relative",
-                  minWidth: 100,
-                }}
-                color="primary"
-                variant="contained"
-                type="submit"
-                startIcon={<SaveIcon />}
-                autoFocus
-                disabled={isEdit}
-              >
-                <IntlMessages id="common.save" />
-              </Button>
-            )}
+            <Button
+              sx={{
+                position: "relative",
+                minWidth: 100,
+              }}
+              color="primary"
+              variant="contained"
+              type="submit"
+              startIcon={<SaveIcon />}
+              autoFocus
+              disabled={isEdit}
+            >
+              <IntlMessages id="common.save" />
+            </Button>
           </Box>
         </Grid>
       </Grid>
@@ -245,5 +228,4 @@ RolesForm.propTypes = {
   setFieldValue: PropTypes.func,
   selectedPermissions: PropTypes.array,
   setSelectedPermissions: PropTypes.func,
-  loadingSubmit: PropTypes.bool.isRequired,
 };

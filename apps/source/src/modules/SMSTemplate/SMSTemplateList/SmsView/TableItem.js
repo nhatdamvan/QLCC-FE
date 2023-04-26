@@ -1,7 +1,6 @@
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
 import PropTypes from "prop-types";
-import Box from "@mui/material/Box";
 import { styled } from "@mui/material/styles";
 import { IconButton } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -31,10 +30,12 @@ const TableItem = ({ data, onSelectContactsForDelete }) => {
       sx={{ cursor: "pointer" }}
       onClick={() => {
         navigate("/SmsTemplate/" + data.id);
-      }}>
+      }}
+    >
       <StyledTableCell align="left">{data.Code}</StyledTableCell>
-      <StyledTableCell component="th" scope="row">{data.Name}</StyledTableCell>
-      <StyledTableCell align="left">{data.Title}</StyledTableCell>
+      <StyledTableCell component="th" scope="row">
+        {data.Name}
+      </StyledTableCell>
       <StyledTableCell align="right">
         <IconButton
           sx={{

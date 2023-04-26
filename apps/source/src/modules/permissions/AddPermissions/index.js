@@ -2,24 +2,24 @@ import AppLoader from "@crema/components/AppLoader";
 import AppTooltip from "@crema/components/AppTooltip";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import IntlMessages from "@crema/helpers/IntlMessages";
-import jwtAxios from "@crema/services/auth/JWT";
 import { Box, Card } from "@mui/material";
 import { Formik } from "formik";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import PermissionForm from "./AddPermissionsForm";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import * as yup from "yup";
+import AppInfoView from "@crema/components/AppInfoView";
+import { getData, postData, putData } from "@crema/hooks/APIHooks";
+
 const validationSchema = yup.object({});
+
 const CreatePermission = () => {
   const { id } = useParams();
-  const [detail, setDetail] = useState({});
+  const [detail, setDetail] = useState(null);
   const navigate = useNavigate();
   const infoViewActionsContext = useInfoViewActionsContext();
-  const [loadingDetail, setLoadingDetail] = useState(false);
   const [codePermission, setCodePermission] = useState("");
-  const [loadingGetCode, setLoadingGetCode] = useState(false);
-  const [loadingSubmit, setLoadingSubbmit] = useState(false);
 
   useEffect(() => {
     if (id !== "Create") {
@@ -29,65 +29,56 @@ const CreatePermission = () => {
     }
   }, []);
 
-  const getDataDetail = async () => {
-    try {
-      setLoadingDetail(true);
-      const dataResult = await jwtAxios.get(`permission/${id}`);
-      setDetail(dataResult.data.data);
-    } catch (error) {
-      infoViewActionsContext.fetchError(error.message);
-    } finally {
-      setLoadingDetail(false);
-    }
-  };
-
-  const getCodePermission = async () => {
-    setLoadingGetCode(true);
-    jwtAxios
-      .post(`generationCode`, {
-        code: "PER",
-      })
-      .then((request) => {
-        setCodePermission(request.data.data);
+  const getDataDetail = () => {
+    getData(`permission/${id}`, infoViewActionsContext)
+      .then(({ data }) => {
+        setDetail(data);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
+      });
+  };
+
+  const getCodePermission = () => {
+    postData(`generationCode`, infoViewActionsContext, {
+      code: "PER",
+    })
+      .then(({ data }) => {
+        setCodePermission(data);
       })
-      .finally(() => {
-        setLoadingGetCode(false);
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
   };
 
   const handleCreatePermission = (data) => {
-    setLoadingSubbmit(true);
-    jwtAxios
-      .post("permission", data)
+    postData("permission", infoViewActionsContext, data)
       .then(() => {
-        // reCallAPI();
         navigate("/Permissions/List");
-        infoViewActionsContext.showMessage("Success!");
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
   };
+
   const handleEditPermission = (data) => {
-    setLoadingSubbmit(true);
-    jwtAxios
-      .put("permission", data)
-      .then(() => {
-        navigate("/Permissions/List");
-        infoViewActionsContext.showMessage("Edit Permission Success!");
+    putData("permission", infoViewActionsContext, data)
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
+  };
+
+  const loading = useMemo(
+    () => !(id === "Create" ? codePermission : detail),
+    [codePermission, detail, id]
+  );
+
+  const handleBack = (event) => {
+    event.preventDefault();
+    navigate("/Permissions/List");
   };
 
   return (
@@ -99,7 +90,7 @@ const CreatePermission = () => {
         component="span"
         mr={{ xs: 2, sm: 4 }}
         mb={4}
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
       >
         <AppTooltip title={<IntlMessages id="common.back" />}>
           <ArrowBackIcon
@@ -110,15 +101,15 @@ const CreatePermission = () => {
         </AppTooltip>
       </Box>
       <Card>
-        {loadingGetCode || loadingDetail ? (
+        {loading ? (
           <AppLoader />
         ) : (
           <Formik
             validateOnBlur={true}
             initialValues={{
-              id: detail.id ? detail.id : "",
-              Code: detail.Code ? detail.Code : codePermission,
-              Name: detail.Name ? detail.Name : "",
+              id: detail?.id ? detail?.id : "",
+              Code: detail?.Code ? detail?.Code : codePermission,
+              Name: detail?.Name ? detail?.Name : "",
             }}
             validationSchema={validationSchema}
             onSubmit={(data) => {
@@ -130,15 +121,12 @@ const CreatePermission = () => {
             }}
           >
             {({ values, setFieldValue }) => (
-              <PermissionForm
-                values={values}
-                setFieldValue={setFieldValue}
-                loadingSubmit={loadingSubmit}
-              />
+              <PermissionForm values={values} setFieldValue={setFieldValue} />
             )}
           </Formik>
         )}
       </Card>
+      <AppInfoView />
     </>
   );
 };

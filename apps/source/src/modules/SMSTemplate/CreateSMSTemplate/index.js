@@ -1,8 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import * as yup from "yup";
-import jwtAxios from "@crema/services/auth/JWT";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Box, Card } from "@mui/material";
 import IntlMessages from "@crema/helpers/IntlMessages";
 import AppTooltip from "@crema/components/AppTooltip";
@@ -10,6 +9,8 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AppLoader from "@crema/components/AppLoader";
 import { Formik } from "formik";
 import SmsTemplateForm from "./SmsTemplateForm";
+import { getData, postData, putData } from "@crema/hooks/APIHooks";
+import AppInfoView from "@crema/components/AppInfoView";
 
 const validationSchema = yup.object({});
 
@@ -18,11 +19,8 @@ const CreateSMSTemplate = () => {
   const navigate = useNavigate();
   const infoViewActionsContext = useInfoViewActionsContext();
 
-  const [detail, setDetail] = useState({});
-  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detail, setDetail] = useState(null);
   const [codeSmsTemplate, setCodeSmsTemplate] = useState("");
-  const [loadingGetCode, setLoadingGetCode] = useState(false);
-  const [loadingSubmit, setLoadingSubbmit] = useState(false);
 
   useEffect(() => {
     if (id !== "Create") {
@@ -32,68 +30,57 @@ const CreateSMSTemplate = () => {
     }
   }, []);
 
-  const getDataDetail = async () => {
-    try {
-      setLoadingDetail(true);
-      const dataResult = await jwtAxios.get(`smsTemplate/${id}`);
-      setDetail(dataResult.data.data);
-    } catch (error) {
-      infoViewActionsContext.fetchError(error.message);
-    } finally {
-      setLoadingDetail(false);
-    }
-  };
-
-  const getCodeTemplateEmail = async () => {
-    setLoadingGetCode(true);
-    jwtAxios
-      .post(`generationCode`, {
-        code: "SMST",
-      })
-      .then((request) => {
-        setCodeSmsTemplate(request.data.data);
+  const getDataDetail = () => {
+    getData(`smsTemplate/${id}`, infoViewActionsContext)
+      .then(({ data }) => {
+        setDetail(data);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
+      });
+  };
+
+  const getCodeTemplateEmail = () => {
+    postData(`generationCode`, infoViewActionsContext, {
+      code: "SMST",
+    })
+      .then(({ data }) => {
+        setCodeSmsTemplate(data);
       })
-      .finally(() => {
-        setLoadingGetCode(false);
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
   };
 
   const handleCreate = (data) => {
-    setLoadingSubbmit(true);
-
-    jwtAxios
-      .post("smsTemplate", data)
+    postData("smsTemplate", infoViewActionsContext, data)
       .then(() => {
         navigate("/SmsTemplate/List");
-        infoViewActionsContext.showMessage("Success!");
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
   };
 
   const handleEdit = (data) => {
-    setLoadingSubbmit(true);
-
-    jwtAxios
-      .put("/smsTemplate", data)
-      .then((response) => {
-        navigate("/SmsTemplate/List");
-        infoViewActionsContext.showMessage("Edit Template Email successfull!");
+    putData("smsTemplate", infoViewActionsContext, data)
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
   };
+
+  const handleBack = (event) => {
+    event.preventDefault();
+    navigate("/SmsTemplate/List");
+  };
+
+  const loading = useMemo(
+    () => !(id === "Create" ? codeSmsTemplate : detail),
+    [codeSmsTemplate, detail, id]
+  );
 
   return (
     <>
@@ -104,7 +91,7 @@ const CreateSMSTemplate = () => {
         component="span"
         mr={{ xs: 2, sm: 4 }}
         mb={4}
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
       >
         <AppTooltip title={<IntlMessages id="common.back" />}>
           <ArrowBackIcon
@@ -115,16 +102,16 @@ const CreateSMSTemplate = () => {
         </AppTooltip>
       </Box>
       <Card>
-        {loadingGetCode || loadingDetail ? (
+        {loading ? (
           <AppLoader />
         ) : (
           <Formik
             validateOnBlur={true}
             initialValues={{
-              id: detail.id ? detail.id : "",
-              Code: detail.Code ? detail.Code : codeSmsTemplate,
-              Name: detail.Name ? detail.Name : "",
-              Content: detail.Content ? detail.Content : "",
+              id: detail?.id ? detail?.id : "",
+              Code: detail?.Code ? detail?.Code : codeSmsTemplate,
+              Name: detail?.Name ? detail?.Name : "",
+              Content: detail?.Content ? detail?.Content : "",
             }}
             validationSchema={validationSchema}
             onSubmit={(data) => {
@@ -136,15 +123,12 @@ const CreateSMSTemplate = () => {
             }}
           >
             {({ values, setFieldValue }) => (
-              <SmsTemplateForm
-                values={values}
-                setFieldValue={setFieldValue}
-                loadingSubmit={loadingSubmit}
-              />
+              <SmsTemplateForm values={values} setFieldValue={setFieldValue} />
             )}
           </Formik>
         )}
       </Card>
+      <AppInfoView />
     </>
   );
 };

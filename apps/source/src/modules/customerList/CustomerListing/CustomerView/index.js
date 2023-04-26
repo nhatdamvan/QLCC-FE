@@ -1,5 +1,4 @@
 import AppConfirmDialog from "@crema/components/AppConfirmDialog";
-import AppLoader from "@crema/components/AppLoader";
 import AppTableContainer from "@crema/components/AppTableContainer";
 import {
   Table,
@@ -16,15 +15,14 @@ import TableHeading from "./TableHeading";
 import TableItem from "./TableItem";
 import IntlMessages from "@crema/helpers/IntlMessages";
 import { useState } from "react";
-import jwtAxios from "@crema/services/auth/JWT";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
+import { deleteData } from "@crema/hooks/APIHooks";
 
 const CustomerView = () => {
   const { isLoading, customers } = useCustomerContext();
   const { getData } = useCustomerActionContext();
 
   const infoViewActionsContext = useInfoViewActionsContext();
-  const { fetchSuccess } = infoViewActionsContext;
 
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemSelected, setItemSelected] = useState("");
@@ -34,18 +32,15 @@ const CustomerView = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleDelete = async () => {
-    try {
-      setDeleteDialogOpen(false);
-      const response = await jwtAxios.delete(`customer/${itemSelected}`);
-      if (response) {
-        fetchSuccess();
-        infoViewActionsContext.showMessage(response.data.Message);
-      }
-      getData();
-    } catch (error) {
-      infoViewActionsContext.fetchError(error.message);
-    }
+  const handleDelete = () => {
+    setDeleteDialogOpen(false);
+    deleteData(`customer/${itemSelected}`, infoViewActionsContext)
+      .then(() => {
+        getData();
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
   };
 
   return (
@@ -57,9 +52,7 @@ const CustomerView = () => {
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell sx={{ border: "0 none" }}>
-                <AppLoader />
-              </TableCell>
+              <TableCell sx={{ border: "0 none" }}></TableCell>
             </TableRow>
           ) : (
             customers.map((data) => (

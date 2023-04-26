@@ -12,12 +12,16 @@ import AppList from "@crema/components/AppList";
 import FileRow from "libs/modules/src/lib/thirdParty/reactDropzone/components/FileRow";
 import { useDropzone } from "react-dropzone";
 import { useEffect, useState } from "react";
-import jwtAxios from "@crema/services/auth/JWT";
 import { LoadingButton } from "@mui/lab";
 import SaveIcon from "@mui/icons-material/Save";
 
 import "react-quill/dist/quill.snow.css";
 import { Android12Switch } from "libs/modules/src/lib/muiComponents/inputs/Switches/Customization";
+import {
+  useInfoViewActionsContext,
+  useInfoViewContext,
+} from "@crema/context/InfoViewContextProvider";
+import { postData } from "@crema/hooks/APIHooks";
 
 const ReactQuillWrapper = styled(ReactQuill)(() => {
   return {
@@ -32,11 +36,12 @@ const ReactQuillWrapper = styled(ReactQuill)(() => {
   };
 });
 
-const EmailTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
+const EmailTemplateForm = ({ values, setFieldValue }) => {
   const { messages } = useIntl();
-  const [isEdit, setIsEdit] = useState(values?.id ? true : false);
-  const dropzone = useDropzone({ noClick: isEdit });
+  const { loading } = useInfoViewContext();
+  const infoViewActionsContext = useInfoViewActionsContext();
 
+  const [isEdit, setIsEdit] = useState(values?.id ? true : false);
   const [uploadedFiles, setUploadedFiles] = useState(
     values.Files.map((item) => {
       return {
@@ -46,7 +51,7 @@ const EmailTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
       };
     })
   );
-  const [loadingUploadFile, setLoadingUploadingFile] = useState(false);
+  const dropzone = useDropzone({ noClick: isEdit });
 
   useEffect(() => {
     if (dropzone.acceptedFiles.length) {
@@ -62,30 +67,25 @@ const EmailTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
   };
 
   const handleUploadFile = (files) => {
-    setLoadingUploadingFile(true);
     const formData = new FormData();
     files.forEach((item) => {
       formData.append("file", item);
     });
 
-    jwtAxios
-      .post("/uploadFile/file", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
-      .then((response) => {
+    postData(`uploadFile/file`, infoViewActionsContext, formData, false, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+      .then(({ data }) => {
         setUploadedFiles([...uploadedFiles, ...files]);
         setFieldValue("Files", [
           ...uploadedFiles,
-          ...response.data.data.map((item) => ({ id: item })),
+          ...data.map((item) => ({ id: item })),
         ]);
       })
       .catch((error) => {
-        console.log(error, "error");
-      })
-      .finally(() => {
-        setLoadingUploadingFile(false);
+        infoViewActionsContext.fetchError(error.message);
       });
   };
 
@@ -233,7 +233,7 @@ const EmailTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
             >
               <IntlMessages id="common.file" />
             </Box>
-            {loadingUploadFile ? (
+            {loading ? (
               <LinearProgress color="inherit" />
             ) : (
               <>
@@ -249,7 +249,7 @@ const EmailTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
                         key={index + file.path}
                         file={file}
                         onDeleteUploadFile={
-                          isEdit ? () => { } : onDeleteUploadFile
+                          isEdit ? () => {} : onDeleteUploadFile
                         }
                       />
                     )}
@@ -276,7 +276,6 @@ const EmailTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
               color="primary"
               variant="contained"
               type="submit"
-              loading={loadingSubmit}
               startIcon={<SaveIcon />}
               disabled={isEdit}
             >
@@ -294,5 +293,4 @@ export default EmailTemplateForm;
 EmailTemplateForm.propTypes = {
   values: PropTypes.object.isRequired,
   setFieldValue: PropTypes.func,
-  loadingSubmit: PropTypes.bool.isRequired,
 };

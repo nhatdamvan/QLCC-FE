@@ -11,7 +11,6 @@ import AppLoader from "@crema/components/AppLoader";
 import TableItem from "./TableItem";
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
-import jwtAxios from "@crema/services/auth/JWT";
 import AppConfirmDialog from "@crema/components/AppConfirmDialog";
 import IntlMessages from "@crema/helpers/IntlMessages";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
@@ -22,6 +21,7 @@ import {
   useUserActionContext,
   useUserContext,
 } from "../../../userList/context/UserContextProvider";
+import { postData } from "@crema/hooks/APIHooks";
 
 const CustomerSupportView = ({
   loading,
@@ -43,7 +43,6 @@ const CustomerSupportView = ({
     getData: getUsers,
   } = useUserActionContext();
   const infoViewActionsContext = useInfoViewActionsContext();
-  const { fetchSuccess } = infoViewActionsContext;
 
   const { getData } = useCustomerSupportActionsContext();
 
@@ -70,14 +69,16 @@ const CustomerSupportView = ({
   };
 
   const handleAssignTicket = () => {
-    try {
-      jwtAxios.post("asignTicket", {
-        AsignUserId: selectedUser[0].id,
-        TicketRequestId: ticketSelected,
+    postData("asignTicket", infoViewActionsContext, {
+      AsignUserId: selectedUser[0].id,
+      TicketRequestId: ticketSelected,
+    })
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
-    } catch (error) {
-      console.log(error);
-    }
   };
 
   const onSelectContactsForDelete = (property) => {
@@ -85,18 +86,15 @@ const CustomerSupportView = ({
     setDeleteDialogOpen(true);
   };
 
-  const handleDelete = async () => {
-    try {
-      setDeleteDialogOpen(false);
-      const response = await jwtAxios.delete(`ticketRequest/${itemSelected}`);
-      if (response) {
-        fetchSuccess();
-        infoViewActionsContext.showMessage(response.data.Message);
-      }
-      getData();
-    } catch (error) {
-      infoViewActionsContext.fetchError(error.message);
-    }
+  const handleDelete = () => {
+    setDeleteDialogOpen(false);
+    deleteData(`ticketRequest/${itemSelected}`, infoViewActionsContext)
+      .then(() => {
+        getData();
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
   };
 
   return (

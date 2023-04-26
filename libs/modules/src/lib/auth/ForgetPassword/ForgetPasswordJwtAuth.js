@@ -1,16 +1,16 @@
-import React from 'react';
-import Button from '@mui/material/Button';
-import { Form, Formik } from 'formik';
-import * as yup from 'yup';
-import { Link } from 'react-router-dom';
-import AppInfoView from '@crema/components/AppInfoView';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import IntlMessages from '@crema/helpers/IntlMessages';
-import AppTextField from '@crema/components/AppTextField';
-import { Fonts } from '@crema/constants/AppEnums';
-import AuthWrapper from '../AuthWrapper';
-import jwtAxios  from 'libs/services/auth/src/jwt-auth/index';
+import Button from "@mui/material/Button";
+import { Form, Formik } from "formik";
+import * as yup from "yup";
+import { Link } from "react-router-dom";
+import AppInfoView from "@crema/components/AppInfoView";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import IntlMessages from "@crema/helpers/IntlMessages";
+import AppTextField from "@crema/components/AppTextField";
+import { Fonts } from "@crema/constants/AppEnums";
+import AuthWrapper from "../AuthWrapper";
+import { postData } from "@crema/hooks/APIHooks";
+import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 
 const validationSchema = yup.object({
   email: yup
@@ -20,9 +20,11 @@ const validationSchema = yup.object({
 });
 
 const ForgetPasswordJwtAuth = () => {
+  const infoViewActionsContext = useInfoViewActionsContext();
+
   return (
     <AuthWrapper>
-      <Box sx={{ width: '100%' }}>
+      <Box sx={{ width: "100%" }}>
         <Box sx={{ mb: { xs: 8, xl: 10 } }}>
           <Typography
             variant="h2"
@@ -41,7 +43,7 @@ const ForgetPasswordJwtAuth = () => {
             sx={{
               pt: 3,
               fontSize: 15,
-              color: 'grey.500',
+              color: "grey.500",
             }}
           >
             <span style={{ marginRight: 4 }}>
@@ -51,9 +53,9 @@ const ForgetPasswordJwtAuth = () => {
               component="span"
               sx={{
                 fontWeight: Fonts.MEDIUM,
-                '& a': {
+                "& a": {
                   color: (theme) => theme.palette.primary.main,
-                  textDecoration: 'none',
+                  textDecoration: "none",
                 },
               }}
             >
@@ -64,30 +66,36 @@ const ForgetPasswordJwtAuth = () => {
           </Typography>
         </Box>
 
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
             <Formik
               validateOnChange={true}
               validationSchema={validationSchema}
-              onSubmit={(data, { setSubmitting, resetForm }) => {
+              onSubmit={({ resetForm }) => {
+                postData("changePassword", infoViewActionsContext, {
+                  Username: email,
+                  Password: password,
+                })
+                  .then(() => {
+                    navigate("/ZaloTemplate/List");
+                  })
+                  .catch((error) => {
+                    infoViewActionsContext.fetchError(error.message);
+                  });
 
-                setSubmitting(true);
-                //reset password api goes here
-                const { dataResult } = jwtAxios.post('changePassword', { Username: email, Password: password });
-                setSubmitting(false);
                 resetForm();
               }}
             >
               {({ isSubmitting }) => (
-                <Form style={{ textAlign: 'left' }}>
+                <Form style={{ textAlign: "left" }}>
                   <Box sx={{ mb: { xs: 5, lg: 8 } }}>
                     <AppTextField
                       placeholder="Email"
                       name="email"
                       label={<IntlMessages id="common.emailAddress" />}
                       sx={{
-                        width: '100%',
-                        '& .MuiInputBase-input': {
+                        width: "100%",
+                        "& .MuiInputBase-input": {
                           fontSize: 14,
                         },
                       }}
@@ -102,7 +110,7 @@ const ForgetPasswordJwtAuth = () => {
                       disabled={isSubmitting}
                       sx={{
                         fontWeight: Fonts.REGULAR,
-                        textTransform: 'capitalize',
+                        textTransform: "capitalize",
                         fontSize: 16,
                         minWidth: 160,
                       }}

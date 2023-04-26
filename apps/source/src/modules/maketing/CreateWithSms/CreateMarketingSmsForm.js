@@ -4,7 +4,6 @@ import AppTextField from "@crema/components/AppTextField";
 import { Fonts } from "@crema/constants";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import IntlMessages from "@crema/helpers/IntlMessages";
-import jwtAxios from "@crema/services/auth/JWT";
 import SearchIcon from "@mui/icons-material/Search";
 import { LoadingButton } from "@mui/lab";
 import {
@@ -34,13 +33,12 @@ import {
 import AppSelectItemDialog from "@crema/components/AppSelectItemDialog";
 import { useIntl } from "react-intl";
 import SaveIcon from "@mui/icons-material/Save";
+import { postData } from "@crema/hooks/APIHooks";
 
 const CreateMarketingSmsForm = ({
   values,
   setFieldValue,
-  isSubmitting,
   typeSourceData,
-  loading,
   templates,
   setSelectedCustomer,
   selectedCustomer,
@@ -75,7 +73,6 @@ const CreateMarketingSmsForm = ({
 
   const [isOpenDialog, setIsOpenDialog] = useState(false);
   const [isOpenDialogGroup, setIsOpenGroupDialog] = useState(false);
-  const [loadingPreview, setLoadingPreview] = useState(false);
   const [isEdit, setIsEdit] = useState(values?.id ? true : false);
 
   const handleOpenDialog = () => {
@@ -95,20 +92,15 @@ const CreateMarketingSmsForm = ({
   };
 
   const handlePreview = () => {
-    setLoadingPreview(true);
-    jwtAxios
-      .post("sendPreview", {
-        TemplateId: values.TempalteSMSId,
-        TypeCampaingnsCode: values.TypeCampaingnsCode,
-      })
-      .then((response) => {
-        infoViewActionsContext.showMessage(response.data.message);
+    postData("sendPreview", infoViewActionsContext, {
+      TemplateId: values.TempalteSMSId,
+      TypeCampaingnsCode: values.TypeCampaingnsCode,
+    })
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingPreview(false);
       });
   };
 
@@ -427,7 +419,6 @@ const CreateMarketingSmsForm = ({
                 m: 4,
               }}
               variant="contained"
-              loading={loadingPreview}
               onClick={handlePreview}
               disabled={isEdit}
               startIcon={<SaveIcon />}
@@ -443,7 +434,6 @@ const CreateMarketingSmsForm = ({
               color="primary"
               variant="outlined"
               type="submit"
-              loading={isSubmitting}
               disabled={isEdit}
               startIcon={<SaveIcon />}
             >
@@ -497,7 +487,6 @@ export default CreateMarketingSmsForm;
 CreateMarketingSmsForm.propTypes = {
   setFieldValue: PropTypes.func,
   values: PropTypes.object,
-  isSubmitting: PropTypes.bool,
   typeSourceData: PropTypes.array,
   loading: PropTypes.bool,
   templates: PropTypes.array,

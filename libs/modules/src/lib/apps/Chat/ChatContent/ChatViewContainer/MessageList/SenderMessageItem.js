@@ -1,117 +1,119 @@
-import React, { useState } from 'react';
-import clsx from 'clsx';
-import PropTypes from 'prop-types';
-import Box from '@mui/material/Box';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Avatar from '@mui/material/Avatar';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import EditIcon from '@mui/icons-material/Edit';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import IntlMessages from '@crema/helpers/IntlMessages';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import IconButton from '@mui/material/IconButton';
-import MediaViewer from '@crema/components/AppMedialViewer';
-import { orange } from '@mui/material/colors';
-import { alpha } from '@mui/material';
-import { Fonts } from '@crema/constants/AppEnums';
+import React, { useState } from "react";
+import clsx from "clsx";
+import PropTypes from "prop-types";
+import Box from "@mui/material/Box";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import Avatar from "@mui/material/Avatar";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import EditIcon from "@mui/icons-material/Edit";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import IntlMessages from "@crema/helpers/IntlMessages";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import IconButton from "@mui/material/IconButton";
+import MediaViewer from "@crema/components/AppMedialViewer";
+import { orange } from "@mui/material/colors";
+import { alpha } from "@mui/material";
+import { Fonts } from "@crema/constants/AppEnums";
 
-import { getFileSize } from '@crema/helpers';
-import { styled } from '@mui/material/styles';
-import { MessageType } from '@crema/fakedb/chat/connectionList';
+import { getFileSize } from "@crema/helpers";
+import { styled } from "@mui/material/styles";
+import { MessageType } from "@crema/fakedb/chat/connectionList";
 
-const SenderMessageWrapper = styled('div')(({ theme }) => {
+const getUrlImage = (id) => process.env.NX_API_FILE + id;
+
+const SenderMessageWrapper = styled("div")(({ theme }) => {
   return {
     mt: 5.5,
-    display: 'flex',
-    justifyContent: 'flex-end',
-    '&:last-of-type': {
+    display: "flex",
+    justifyContent: "flex-end",
+    "&:last-of-type": {
       marginBottom: 0,
     },
-    '&.last-chat-message .message-chat': {
+    "&.last-chat-message .message-chat": {
       borderBottomRightRadius: theme.cardRadius,
     },
-    '& .message-chat-avatar': {
+    "& .message-chat-avatar": {
       marginRight: 0,
       marginBottom: 0,
     },
-    '& .message-chat-item': {
-      textAlign: 'right',
+    "& .message-chat-item": {
+      textAlign: "right",
     },
-    '& .edit-view': {
+    "& .edit-view": {
       paddingLeft: 0,
       paddingRight: 10,
     },
-    '&:hover': {
-      '& .message-more-dropdown-link': {
+    "&:hover": {
+      "& .message-more-dropdown-link": {
         opacity: 1,
-        visibility: 'visible',
+        visibility: "visible",
       },
     },
-    '&.hideUser-info': {
-      position: 'relative',
+    "&.hideUser-info": {
+      position: "relative",
       marginTop: 1,
-      '& .message-time, & .message-chat-avatar': {
-        display: 'none',
+      "& .message-time, & .message-chat-avatar": {
+        display: "none",
       },
-      '& .message-chat-sender': {
+      "& .message-chat-sender": {
         marginBottom: 0,
       },
-      '& .message-chat-item': {
+      "& .message-chat-item": {
         marginRight: 34,
       },
     },
   };
 });
 
-const VideoWrapper = styled('div')(({ theme }) => {
+const VideoWrapper = styled("div")(({ theme }) => {
   return {
-    position: 'relative',
+    position: "relative",
     width: 56,
     height: 56,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: theme.palette.common.black,
-    '&:before': {
+    "&:before": {
       content: "''",
-      position: 'absolute',
+      position: "absolute",
       left: 0,
       top: 0,
-      width: '100%',
-      paddingTop: '100%',
+      width: "100%",
+      paddingTop: "100%",
     },
-    '& video, & iframe, & embed, & object': {
-      position: 'absolute',
+    "& video, & iframe, & embed, & object": {
+      position: "absolute",
       left: 0,
       top: 0,
-      width: '100%',
-      height: '100%',
-      border: '0 none',
-      objectFit: 'cover',
+      width: "100%",
+      height: "100%",
+      border: "0 none",
+      objectFit: "cover",
     },
   };
 });
-const MessageChat = styled('div')(({ theme }) => {
+const MessageChat = styled("div")(({ theme }) => {
   return {
-    display: 'inline-flex',
+    display: "inline-flex",
     border: `solid 1px ${theme.palette.grey[200]}`,
-    padding: '10px 16px',
-    position: 'relative',
+    padding: "10px 16px",
+    position: "relative",
     fontSize: 14,
-    flexDirection: 'row-reverse',
-    textAlign: 'right',
+    flexDirection: "row-reverse",
+    textAlign: "right",
     backgroundColor: alpha(theme.palette.primary.main, 0.1),
     color: theme.palette.text.secondary,
     borderRadius: theme.cardRadius,
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
-    '& .download-icon': {
-      position: 'absolute',
+    "& .download-icon": {
+      position: "absolute",
       right: 5,
       bottom: 5,
       zIndex: 1,
     },
-    '.last-chat-message &': {
+    ".last-chat-message &": {
       borderBottomLeftRadius: theme.cardRadius,
     },
   };
@@ -119,34 +121,34 @@ const MessageChat = styled('div')(({ theme }) => {
 
 const showMediaItems = 2;
 const getMediaMessage = (item) => {
-  if (item.mime_type.startsWith('image')) {
+  if (item.mime_type.startsWith("image")) {
     return (
       <Box
         sx={{
-          position: 'relative',
-          '& img': {
-            objectFit: 'cover',
+          position: "relative",
+          "& img": {
+            objectFit: "cover",
             borderRadius: 1,
             width: 56,
             height: 56,
-            display: 'block',
+            display: "block",
           },
         }}
       >
         <img alt="" src={item.url} />
       </Box>
     );
-  } else if (item.mime_type.startsWith('video')) {
+  } else if (item.mime_type.startsWith("video")) {
     return (
       <VideoWrapper>
         <video src={item.url} />
         <PlayCircleOutlineIcon
           sx={{
             fontSize: 20,
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
             color: (theme) => theme.palette.common.white,
           }}
         />
@@ -156,8 +158,8 @@ const getMediaMessage = (item) => {
     return (
       <Box
         sx={{
-          display: 'flex',
-          flexWrap: 'nowrap',
+          display: "flex",
+          flexWrap: "nowrap",
         }}
       >
         <DescriptionOutlinedIcon />
@@ -167,10 +169,10 @@ const getMediaMessage = (item) => {
             ml: 2,
           }}
         >
-          <Box component="span" sx={{ display: 'block' }}>
+          <Box component="span" sx={{ display: "block" }}>
             {item.file_name}
           </Box>
-          <Box component="span" sx={{ display: 'block' }}>
+          <Box component="span" sx={{ display: "block" }}>
             {getFileSize(item.file_size)}
           </Box>
         </Box>
@@ -180,19 +182,20 @@ const getMediaMessage = (item) => {
 };
 
 const getMessage = (item, setIndex) => {
-  if (item.message_type === MessageType.TEXT) {
-    return <Box component="p">{item.message}</Box>;
+  if (true) {
+    // item.message_type === MessageType.TEXT
+    return <Box component="p">{item.Message.text}</Box>;
   } else {
     return (
       <Box
         sx={{
-          position: 'relative',
-          display: 'inline-block',
-          verticalAlign: 'top',
-          overflow: 'hidden',
+          position: "relative",
+          display: "inline-block",
+          verticalAlign: "top",
+          overflow: "hidden",
         }}
       >
-        <Box
+        {/* <Box
           sx={{
             display: 'flex',
             flexWrap: 'wrap',
@@ -237,16 +240,15 @@ const getMessage = (item, setIndex) => {
               </Box>
             </Box>
           ) : null}
-        </Box>
+        </Box> */}
       </Box>
     );
   }
 };
+
 const SenderMessageItem = ({
   authUser,
   item,
-  onClickEditMessage,
-  deleteMessage,
   isPreviousSender = false,
   isLast,
 }) => {
@@ -278,66 +280,51 @@ const SenderMessageItem = ({
   return (
     <SenderMessageWrapper
       className={clsx(
-        isPreviousSender ? 'hideUser-info' : '',
-        isLast ? 'last-chat-message' : ''
+        isPreviousSender ? "hideUser-info" : "",
+        isLast ? "last-chat-message" : ""
       )}
     >
       <Box
         sx={{
-          position: 'relative',
-          display: 'flex',
-          justifyContent: 'flex-end',
+          position: "relative",
+          display: "flex",
+          justifyContent: "flex-end",
         }}
       >
         <Box
           sx={{
-            position: 'relative',
+            position: "relative",
           }}
           className="message-chat-item"
         >
           <Box
             sx={{
               ml: 0,
-              textAlign: 'right',
+              textAlign: "right",
               fontSize: 12,
               color: (theme) => theme.palette.text.secondary,
-              display: 'block',
+              display: "block",
               mb: 1.5,
             }}
             component="span"
             className="message-time"
           >
-            {item.time}
+            {item.CreatedDate}
           </Box>
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'flex-end',
-              flexDirection: 'row-reverse',
+              display: "flex",
+              alignItems: "flex-end",
+              flexDirection: "row-reverse",
             }}
           >
             <MessageChat>{getMessage(item, setIndex)}</MessageChat>
-
-            {item.edited && (
-              <Box
-                sx={{
-                  pl: 2.5,
-                  color: (theme) => theme.palette.text.secondary,
-                  '& .MuiSvgIcon-root': {
-                    fontSize: 16,
-                  },
-                }}
-                className="edit-view"
-              >
-                <EditIcon />
-              </Box>
-            )}
           </Box>
         </Box>
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
+            display: "flex",
+            alignItems: "center",
             mb: 5.5,
             ml: 2.5,
           }}
@@ -346,19 +333,17 @@ const SenderMessageItem = ({
           {authUser.photoURL ? (
             <Avatar
               sx={{
-                backgroundColor: orange[500],
                 width: 34,
                 height: 34,
                 mr: 2.5,
                 mb: 5.5,
               }}
               className="message-chat-avatar"
-              src={authUser.photoURL}
+              src={getUrlImage(authUser.photoURL)}
             />
           ) : (
             <Avatar
               sx={{
-                backgroundColor: orange[500],
                 width: 34,
                 height: 34,
                 mr: 2.5,
@@ -369,54 +354,9 @@ const SenderMessageItem = ({
               {getUserAvatar()}
             </Avatar>
           )}
-
-          <Box
-            sx={{
-              mr: -2.5,
-              fontSize: 20,
-              display: 'inline-block',
-              opacity: 0,
-              visibility: 'hidden',
-              transition: 'all 0.3s ease',
-              '& .MuiIconButton-root': {
-                padding: 1.25,
-                color: (theme) => theme.palette.text.disabled,
-              },
-            }}
-            className="message-more-dropdown-link"
-          >
-            <IconButton size="large" onClick={onViewMoreOpen}>
-              <MoreVertIcon />
-            </IconButton>
-
-            <Menu
-              anchorEl={isMoreIcon}
-              open={Boolean(isMoreIcon)}
-              onClose={onViewMoreClose}
-            >
-              {item.message_type === MessageType.TEXT ? (
-                <MenuItem
-                  onClick={() => {
-                    onViewMoreClose();
-                    onClickEditMessage(item);
-                  }}
-                >
-                  <IntlMessages id="common.edit" />
-                </MenuItem>
-              ) : null}
-              <MenuItem
-                onClick={() => {
-                  onViewMoreClose();
-                  deleteMessage(item.id);
-                }}
-              >
-                <IntlMessages id="common.delete" />
-              </MenuItem>
-            </Menu>
-          </Box>
         </Box>
       </Box>
-      <MediaViewer index={index} medias={item.media} onClose={onClose} />
+      {/* <MediaViewer index={index} medias={item.media} onClose={onClose} /> */}
     </SenderMessageWrapper>
   );
 };
@@ -429,7 +369,6 @@ SenderMessageItem.propTypes = {
   selectedUser: PropTypes.object,
   authUser: PropTypes.object,
   item: PropTypes.object.isRequired,
-  onClickEditMessage: PropTypes.func,
   deleteMessage: PropTypes.func,
   isPreviousSender: PropTypes.bool,
   isLast: PropTypes.bool,

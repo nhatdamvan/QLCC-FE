@@ -26,7 +26,7 @@ const ReactQuillWrapper = styled(ReactQuill)(() => {
   };
 });
 
-const SmsTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
+const SmsTemplateForm = ({ values, setFieldValue }) => {
   const { messages } = useIntl();
   const [isEdit, setIsEdit] = useState(values?.id ? true : false);
 
@@ -146,7 +146,6 @@ const SmsTemplateForm = ({ values, setFieldValue, loadingSubmit }) => {
               color="primary"
               variant="contained"
               type="submit"
-              loading={loadingSubmit}
               startIcon={<SaveIcon />}
               disabled={isEdit}
             >
@@ -164,5 +163,4 @@ export default SmsTemplateForm;
 SmsTemplateForm.propTypes = {
   values: PropTypes.object.isRequired,
   setFieldValue: PropTypes.func,
-  loadingSubmit: PropTypes.bool.isRequired,
 };

@@ -1,13 +1,11 @@
-import React from 'react';
-import Box from '@mui/material/Box';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
-import Avatar from '@mui/material/Avatar';
-import PropTypes from 'prop-types';
-import ListItem from '@mui/material/ListItem';
-import clsx from 'clsx';
+import Box from "@mui/material/Box";
+import ListItemAvatar from "@mui/material/ListItemAvatar";
+import Avatar from "@mui/material/Avatar";
+import PropTypes from "prop-types";
+import ListItem from "@mui/material/ListItem";
+import clsx from "clsx";
 
-import { green, red } from '@mui/material/colors';
-import { alpha } from '@mui/material';
+import { alpha } from "@mui/material";
 
 const ChatItem = (props) => {
   const { item, selectedUser, setSelectedUser } = props;
@@ -15,16 +13,16 @@ const ChatItem = (props) => {
   return (
     <ListItem
       sx={{
-        display: 'flex',
+        display: "flex",
         pl: 5,
         pr: 5,
-        cursor: 'pointer',
-        '&.active': {
+        cursor: "pointer",
+        "&.active": {
           backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.07),
         },
       }}
       button
-      className={clsx('item-hover', {
+      className={clsx("item-hover", {
         active: selectedUser && selectedUser.id === item.id,
       })}
       onClick={() => setSelectedUser(item)}
@@ -33,7 +31,7 @@ const ChatItem = (props) => {
         <ListItemAvatar
           sx={{
             minWidth: 0,
-            position: 'relative',
+            position: "relative",
           }}
         >
           <>
@@ -42,40 +40,23 @@ const ChatItem = (props) => {
                 width: 40,
                 height: 40,
               }}
-              src={item.image}
+              src={item.SenderInfo?.avatar}
             />
-            {item?.isGroup ? (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  right: -2,
-                  bottom: -2,
-                  zIndex: 1,
-                  borderRadius: '50%',
-                  border: `1.5px solid white`,
-                }}
-              >
-                <Avatar
-                  sx={{ height: 12, width: 12 }}
-                  src={item.members[0].image}
-                />
-              </Box>
-            ) : (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  right: -2,
-                  bottom: -2,
-                  zIndex: 1,
-                  width: 14,
-                  height: 14,
-                  borderRadius: '50%',
-                  border: `1.5px solid white`,
-                  backgroundColor:
-                    item.status === 'online' ? green[600] : red[600],
-                }}
-              />
-            )}
+
+            <Box
+              sx={{
+                position: "absolute",
+                right: -2,
+                bottom: -2,
+                zIndex: 1,
+                width: 14,
+                height: 14,
+                // borderRadius: "50%",
+                // border: `1.5px solid white`,
+                // backgroundColor:
+                //   item.status === "online" ? green[600] : red[600],
+              }}
+            />
           </>
         </ListItemAvatar>
       </div>
@@ -83,29 +64,31 @@ const ChatItem = (props) => {
         sx={{
           fontSize: 14,
           pl: 3.5,
-          width: 'calc(100% - 36px)',
+          width: "calc(100% - 36px)",
         }}
       >
         <Box
           component="h5"
           sx={{
-            display: 'block',
+            display: "block",
             mb: 0.5,
           }}
         >
-          {item.name}
+          {item.SenderInfo?.display_name
+            ? item.SenderInfo?.display_name
+            : `Người dùng`}
         </Box>
         <Box
           component="p"
           sx={{
-            color: 'text.secondary',
-            display: 'block',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            color: "text.secondary",
+            display: "block",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
-          {item.lastMessage.message}
+          {item.MessageLast}
         </Box>
       </Box>
     </ListItem>

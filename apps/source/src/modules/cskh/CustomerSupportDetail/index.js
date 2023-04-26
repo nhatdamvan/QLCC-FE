@@ -7,30 +7,31 @@ import Common from "./Common";
 import IntlMessages from "@crema/helpers/IntlMessages";
 import AppTooltip from "@crema/components/AppTooltip";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import jwtAxios from "@crema/services/auth/JWT";
+import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
+import { getData } from "@crema/hooks/APIHooks";
 
 const CustomerSupportDetail = () => {
+  const infoViewActionsContext = useInfoViewActionsContext();
   const navigate = useNavigate();
   const { messages } = useIntl();
   const { id } = useParams();
 
   const [value, setValue] = useState("1");
   const [data, setData] = useState({});
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getData = async () => {
-      try {
-        const dataResult = await jwtAxios.get(`ticketRequest/${id}`);
-        setData(dataResult.data.data);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getData();
+    getDataDetail();
   }, []);
+
+  const getDataDetail = () => {
+    getData(`ticketRequest/${id}`, infoViewActionsContext)
+      .then(({ data }) => {
+        setData(data);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
+  };
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -70,7 +71,7 @@ const CustomerSupportDetail = () => {
             </Box>
             <Box sx={{ px: "10px", py: "14px" }}>
               <TabPanel value="1">
-                <Common data={data} loading={loading} />
+                <Common data={data} />
               </TabPanel>
               <TabPanel value="2">Item Two</TabPanel>
               <TabPanel value="3">Item Three</TabPanel>

@@ -1,12 +1,11 @@
-import React from "react";
 import { Box, Typography } from "@mui/material";
 import IntlMessages from "@crema/helpers/IntlMessages";
 import { Fonts } from "@crema/constants/AppEnums";
 import ChangePasswordForm from "./ChangePasswordForm";
 import { Formik } from "formik";
 import * as yup from "yup";
-import jwtAxios from "libs/services/auth/src/jwt-auth/index";
-import { async } from "rxjs";
+import { postData } from "@crema/hooks/APIHooks";
+import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 
 const validationSchema = yup.object({
   oldPassword: yup
@@ -25,6 +24,8 @@ const validationSchema = yup.object({
 });
 
 const ChangePassword = () => {
+  const infoViewActionsContext = useInfoViewActionsContext();
+
   return (
     <Box
       sx={{
@@ -51,15 +52,18 @@ const ChangePassword = () => {
           retypeNewPassword: "us",
         }}
         validationSchema={validationSchema}
-        onSubmit={async (data, { setSubmitting }) => {
-          setSubmitting(true);
-          const dataResult = await jwtAxios.post("changePassword", {
+        onSubmit={(data) => {
+          postData("changePassword", infoViewActionsContext, {
             PasswordOld: data.oldPassword,
             PasswordNew: data.newPassword,
             PasswordNewConfirm: data.retypeNewPassword,
-          });
-          //chuyen huong den dau thi chuyen
-          setSubmitting(false);
+          })
+            .then(() => {
+              infoViewActionsContext.showMessage(message);
+            })
+            .catch((error) => {
+              infoViewActionsContext.fetchError(error.message);
+            });
         }}
       >
         {() => <ChangePasswordForm />}

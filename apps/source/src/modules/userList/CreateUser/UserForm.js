@@ -32,7 +32,11 @@ import { Android12Switch } from "libs/modules/src/lib/muiComponents/inputs/Switc
 import { useDropzone } from "react-dropzone";
 import { styled } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
-import jwtAxios from "@crema/services/auth/JWT";
+import {
+  useInfoViewActionsContext,
+  useInfoViewContext,
+} from "@crema/context/InfoViewContextProvider";
+import { postData } from "@crema/hooks/APIHooks";
 
 const AvatarViewWrapper = styled("div")(({ theme }) => {
   return {
@@ -72,11 +76,12 @@ const UserForm = ({
   setFieldValue,
   selectedUserGroup,
   setSelectedUserGroup,
-  loadingSubmit,
   selectedRoles,
   setSelectedRoles,
 }) => {
   const { messages } = useIntl();
+  const { loading } = useInfoViewContext();
+  const infoViewActionsContext = useInfoViewActionsContext();
 
   const {
     loading: loadingUsersGroup,
@@ -105,7 +110,6 @@ const UserForm = ({
   const [isOpenDialog, setIsOpenDialog] = useState(false);
   const [isOpenRoleDialog, setIsOpenRoleDialog] = useState(false);
   const [isEdit, setIsEdit] = useState(values?.id ? true : false);
-  const [loadingUploadFile, setLoadingUploadingFile] = useState(false);
 
   const { getRootProps, getInputProps } = useDropzone({
     noClick: isEdit,
@@ -137,23 +141,20 @@ const UserForm = ({
   };
 
   const handleUploadFile = async (file) => {
-    setLoadingUploadingFile(true);
     const formData = new FormData();
     formData.append("file", file[0]);
 
-    try {
-      const response = await jwtAxios.post("/uploadFile/AvatarFile", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+    postData("uploadFile/AvatarFile", infoViewActionsContext, formData, false, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+      .then(({ data }) => {
+        setFieldValue("AvatarFile", data[0]);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
-
-      setFieldValue("AvatarFile", response.data.data[0]);
-    } catch (error) {
-      console.log(error, "error");
-    } finally {
-      setLoadingUploadingFile(false);
-    }
   };
 
   return (
@@ -165,7 +166,7 @@ const UserForm = ({
             justifyContent="space-between"
             alignItems="flex-start"
           >
-            {loadingUploadFile ? (
+            {loading ? (
               <CircularProgress size={76} />
             ) : (
               <AvatarViewWrapper {...getRootProps({ className: "dropzone" })}>
@@ -464,7 +465,6 @@ const UserForm = ({
               color="primary"
               variant="contained"
               type="submit"
-              loading={loadingSubmit}
               startIcon={<SaveIcon />}
               disabled={isEdit}
             >
@@ -518,7 +518,6 @@ UserForm.propTypes = {
   setFieldValue: PropTypes.func,
   selectedUserGroup: PropTypes.array,
   setSelectedUserGroup: PropTypes.func,
-  loadingSubmit: PropTypes.bool.isRequired,
   selectedRoles: PropTypes.array,
   setSelectedRoles: PropTypes.func,
 };

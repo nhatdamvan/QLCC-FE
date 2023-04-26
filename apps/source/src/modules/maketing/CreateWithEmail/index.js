@@ -3,10 +3,9 @@ import AppTooltip from "@crema/components/AppTooltip";
 import { TypeCampaingnsCode } from "@crema/constants";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import IntlMessages from "@crema/helpers/IntlMessages";
-import jwtAxios from "@crema/services/auth/JWT";
 import { Box, Card } from "@mui/material";
 import { Formik } from "formik";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import * as yup from "yup";
 import CustomerGroupContextProvider from "../../customerGroup/Context/CustomerGroupContexProvider";
@@ -14,9 +13,11 @@ import CustomerContextProvider from "../../customerList/context/CustomerContextP
 import CreateMarketingEmailForm from "./CreateMarketingEmailForm";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import moment from "moment";
+import { getData, postData, putData } from "@crema/hooks/APIHooks";
+import AppInfoView from "@crema/components/AppInfoView";
 
 const validationSchema = yup.object({
-  // Email: yup.string().email("Invalid email format").required("Required"),
+  Name: yup.string().required("Trường bắt buộc"),
 });
 
 const CreateWithEmail = () => {
@@ -24,19 +25,12 @@ const CreateWithEmail = () => {
   const navigate = useNavigate();
   const infoViewActionsContext = useInfoViewActionsContext();
 
-  const [loading, setLoading] = useState(false);
   const [typeSourceData, setTypeSourceData] = useState([]);
-  const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [templates, setTemplates] = useState([]);
+  const [detailMarketing, setDetailMarketing] = useState(null);
+  const [codeMarketing, setCodeMarketing] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState([]);
   const [selectedCustomerGroup, setSelectedCustomerGroup] = useState([]);
-
-  const [detailMarketing, setDetailMarketing] = useState({});
-  const [loadingDetail, setLoadingDetail] = useState(false);
-
-  const [codeMarketing, setCodeMarketing] = useState("");
-  const [loadingGetCode, setLoadingGetCode] = useState(false);
-  const [loadingSubbmit, setLoadingSummit] = useState(false);
 
   useEffect(() => {
     getTypeSourceData();
@@ -45,104 +39,92 @@ const CreateWithEmail = () => {
 
   useEffect(() => {
     if (id !== "create") {
-      getData();
+      getDataDetail();
     } else {
-      getCodeCustomer();
+      getCode();
     }
   }, []);
 
-  const getCodeCustomer = async () => {
-    setLoadingGetCode(true);
-    jwtAxios
-      .post(`generationCode`, {
-        code: "CAM",
-      })
-      .then((request) => {
-        setCodeMarketing(request.data.data);
+  const getCode = () => {
+    postData(`generationCode`, infoViewActionsContext, {
+      code: "CAM",
+    })
+      .then(({ data }) => {
+        setCodeMarketing(data);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
+      });
+  };
+
+  const getTypeSourceData = () => {
+    getData("getByGroupCode/TypeSourceDataCode", infoViewActionsContext)
+      .then(({ datas }) => {
+        setTypeSourceData(datas);
       })
-      .finally(() => {
-        setLoadingGetCode(false);
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
   };
 
-  const getTypeSourceData = async () => {
-    try {
-      setLoading(true);
-      const dataResult = await jwtAxios.get(
-        `getByGroupCode/TypeSourceDataCode`
-      );
-      setTypeSourceData(dataResult.data.datas);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getTemplates = async () => {
-    try {
-      setLoadingTemplate(true);
-      const dataResult = await jwtAxios.post("emailTemplates", {
-        ValueFilter: "",
-        Sort: { Name: 1 },
-        PageIndex: 1,
-        PageSize: 99,
+  const getTemplates = () => {
+    postData(`emailTemplates`, infoViewActionsContext, {
+      ValueFilter: "",
+      Sort: { Name: 1 },
+      PageIndex: 1,
+      PageSize: 99,
+    })
+      .then(({ datas }) => {
+        setTemplates(datas);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
-      setTemplates(dataResult.data.datas);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoadingTemplate(false);
-    }
   };
 
-  const getData = async () => {
-    try {
-      setLoadingDetail(true);
-      const dataResult = await jwtAxios.get(`campaingnsDetail/${id}`);
-      setDetailMarketing(dataResult.data.data);
-      setSelectedCustomer(dataResult.data.data.Customers);
-      setSelectedCustomerGroup(dataResult.data.data.CustomerGroups);
-      setLoadingDetail(false);
-    } catch (error) {
-      console.log(error);
-    }
+  const getDataDetail = () => {
+    getData(`campaingnsDetail/${id}`, infoViewActionsContext)
+      .then(({ data }) => {
+        setDetailMarketing(data);
+        setSelectedCustomer(data.Customers);
+        setSelectedCustomerGroup(data.CustomerGroups);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
   };
 
   const createMarketing = (newMarketing) => {
-    setLoadingSummit(true);
-    jwtAxios
-      .post("campaingnsAdd", newMarketing)
+    postData("campaingnsAdd", infoViewActionsContext, newMarketing)
       .then(() => {
-        infoViewActionsContext.showMessage("Success");
         navigate("/marketing");
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSummit(false);
       });
   };
 
   const editMarketing = (newMarketing) => {
-    setLoadingSummit(true);
-    jwtAxios
-      .put("campaingnsEdit", newMarketing)
-      .then(() => {
-        infoViewActionsContext.showMessage("Success");
-        navigate("/marketing");
+    putData("campaingnsEdit", infoViewActionsContext, newMarketing)
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSummit(false);
       });
   };
+
+  const handleBack = (event) => {
+    event.preventDefault();
+    navigate("/marketing");
+  };
+
+  const loading = useMemo(
+    () =>
+      !(typeSourceData.length && templates.length) &&
+      !(id === "Create" ? codeMarketing : detailMarketing),
+    [typeSourceData, templates, codeMarketing, detailMarketing, id]
+  );
 
   return (
     <>
@@ -153,7 +135,7 @@ const CreateWithEmail = () => {
         component="span"
         mr={{ xs: 2, sm: 4 }}
         mb={4}
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
       >
         <AppTooltip title={<IntlMessages id="common.back" />}>
           <ArrowBackIcon
@@ -166,7 +148,7 @@ const CreateWithEmail = () => {
       <CustomerContextProvider>
         <CustomerGroupContextProvider>
           <Card>
-            {loadingGetCode || loadingDetail || loading || loadingTemplate ? (
+            {loading ? (
               <AppLoader />
             ) : (
               <Formik
@@ -192,6 +174,9 @@ const CreateWithEmail = () => {
                   EndDate: detailMarketing?.EndDate
                     ? detailMarketing?.EndDate
                     : moment(),
+                  FileExcelImport: detailMarketing?.FileExcelImport
+                    ? detailMarketing?.FileExcelImport
+                    : [],
                 }}
                 validationSchema={validationSchema}
                 onSubmit={(data) => {
@@ -214,10 +199,7 @@ const CreateWithEmail = () => {
                   <CreateMarketingEmailForm
                     values={values}
                     setFieldValue={setFieldValue}
-                    isSubmitting={loadingSubbmit}
                     typeSourceData={typeSourceData}
-                    loading={loading}
-                    loadingTemplate={loadingTemplate}
                     templates={templates}
                     selectedCustomer={selectedCustomer}
                     setSelectedCustomer={setSelectedCustomer}
@@ -228,6 +210,7 @@ const CreateWithEmail = () => {
               </Formik>
             )}
           </Card>
+          <AppInfoView />
         </CustomerGroupContextProvider>
       </CustomerContextProvider>
     </>

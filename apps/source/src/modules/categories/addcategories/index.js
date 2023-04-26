@@ -1,73 +1,71 @@
-import React, { useEffect, useState } from 'react';
-import { Formik } from 'formik';
+import { useEffect, useMemo, useState } from "react";
+import { Formik } from "formik";
 import { Box, Card } from "@mui/material";
-import { useInfoViewActionsContext } from '@crema/context/InfoViewContextProvider';
+import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLoader from "@crema/components/AppLoader";
 import AppTooltip from "@crema/components/AppTooltip";
 import IntlMessages from "@crema/helpers/IntlMessages";
-import jwtAxios from "@crema/services/auth/JWT";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CategoryForm from "./AddCategory";
 import * as yup from "yup";
+import { getData, postData, putData } from "@crema/hooks/APIHooks";
+import AppInfoView from "@crema/components/AppInfoView";
+
 const validationSchema = yup.object({});
+
 const CreateCategory = () => {
+  const navigate = useNavigate();
   const { id } = useParams();
   const infoViewActionsContext = useInfoViewActionsContext();
-  const [detail, setDetail] = useState({});
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const navigate = useNavigate();
-  const [loadingSubmit, setLoadingSubbmit] = useState(false);
-  const [loadingGetCode, setLoadingGetCode] = useState(false);
+
+  const [detail, setDetail] = useState(null);
+
   useEffect(() => {
     if (id !== "Create") {
       getDataDetail();
-    } else { }
+    }
   }, []);
 
-  const getDataDetail = async () => {
-    try {
-      setLoadingDetail(true);
-      const dataResult = await jwtAxios.get(`category/${id}`);
-      setDetail(dataResult.data.data);
-    } catch (error) {
-      infoViewActionsContext.fetchError(error.message);
-    } finally {
-      setLoadingDetail(false);
-    }
-  };
-  const handleCreateCategory = (data) => {
-    setLoadingSubbmit(true);
-    jwtAxios
-      .post("category", data)
-      .then(() => {
-        // reCallAPI();
-        navigate("/Category/List");
-        infoViewActionsContext.showMessage("Create Category Success!");
+  const getDataDetail = () => {
+    getData(`category/${id}`, infoViewActionsContext)
+      .then(({ data }) => {
+        setDetail(data);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
-      });
-  };
-  const handleEdit = (data) => {
-    setLoadingSubbmit(true);
-    jwtAxios
-      .put("category", data)
-      .then(() => {
-        navigate("/Category/List");
-        infoViewActionsContext.showMessage("Edit Category Success!");
-      })
-      .catch((error) => {
-        infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
   };
 
+  const handleCreateCategory = (data) => {
+    postData("category", infoViewActionsContext, data)
+      .then(() => {
+        navigate("/Category/List");
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
+  };
+
+  const handleEdit = (data) => {
+    putData("category", infoViewActionsContext, data)
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
+  };
+
+  const handleBack = (event) => {
+    event.preventDefault();
+    navigate("/Category/List");
+  };
+
+  const loading = useMemo(
+    () => !(id === "Create" ? true : detail),
+    [detail, id]
+  );
 
   return (
     <>
@@ -78,7 +76,7 @@ const CreateCategory = () => {
         component="span"
         mr={{ xs: 2, sm: 4 }}
         mb={4}
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
       >
         <AppTooltip title={<IntlMessages id="common.back" />}>
           <ArrowBackIcon
@@ -89,18 +87,18 @@ const CreateCategory = () => {
         </AppTooltip>
       </Box>
       <Card>
-        {loadingGetCode || loadingDetail ? (
+        {loading ? (
           <AppLoader />
         ) : (
           <Formik
             validateOnBlur={true}
             initialValues={{
-              id: detail.id ? detail.id : "",
-              Code: detail.Code ? detail.Code : "",
-              Name: detail.Name ? detail.Name : "",
-              GroupName: detail.GroupName ? detail.GroupName : "",
-              GroupCode: detail.GroupCode ? detail.GroupCode : "",
-              Sort: detail.Sort ? detail.Sort : "",
+              id: detail?.id ? detail?.id : "",
+              Code: detail?.Code ? detail?.Code : "",
+              Name: detail?.Name ? detail?.Name : "",
+              GroupName: detail?.GroupName ? detail?.GroupName : "",
+              GroupCode: detail?.GroupCode ? detail?.GroupCode : "",
+              Sort: detail?.Sort ? detail?.Sort : "",
             }}
             validationSchema={validationSchema}
             onSubmit={(data) => {
@@ -112,19 +110,14 @@ const CreateCategory = () => {
             }}
           >
             {({ values, setFieldValue }) => (
-              <CategoryForm
-                values={values}
-                setFieldValue={setFieldValue}
-                loadingSubmit={loadingSubmit}
-              />
+              <CategoryForm values={values} setFieldValue={setFieldValue} />
             )}
           </Formik>
         )}
       </Card>
+      <AppInfoView />
     </>
   );
 };
 
 export default CreateCategory;
-
-

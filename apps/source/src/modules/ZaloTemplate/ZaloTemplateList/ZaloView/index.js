@@ -1,41 +1,45 @@
-import AppLoader from "@crema/components/AppLoader";
 import AppTableContainer from "@crema/components/AppTableContainer";
-import { Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
-import { useZaloContext ,useZaloActionContext } from "../../context/ZaloTemplateContextProvider";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from "@mui/material";
+import {
+  useZaloContext,
+  useZaloActionContext,
+} from "../../context/ZaloTemplateContextProvider";
 import TableHeading from "./TableHeading";
 import TableItem from "./TableItem";
 import { useState } from "react";
-import jwtAxios from "@crema/services/auth/JWT";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import AppConfirmDialog from "@crema/components/AppConfirmDialog";
 import IntlMessages from "@crema/helpers/IntlMessages";
-
+import { deleteData } from "@crema/hooks/APIHooks";
 
 const ZaloView = () => {
   const { loading, zaloTemplates } = useZaloContext();
   const { getData } = useZaloActionContext();
   const infoViewActionsContext = useInfoViewActionsContext();
-  const { fetchSuccess } = infoViewActionsContext;
+
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemSelected, setItemSelected] = useState("");
+
   const onSelectContactsForDelete = (property) => {
     setItemSelected(property);
     setDeleteDialogOpen(true);
   };
   const handleDelete = async () => {
-    try {
-      setDeleteDialogOpen(false);
-      const response = await jwtAxios.delete(`zaloTemplate/${itemSelected}`);
-      if (response) {
-        fetchSuccess();
-        infoViewActionsContext.showMessage(response.data.Message);
-      }
-      getData();
-    } catch (error) {
-      infoViewActionsContext.fetchError(error.message);
-    }
+    setDeleteDialogOpen(false);
+    deleteData(`zaloTemplate/${itemSelected}`, infoViewActionsContext)
+      .then(() => {
+        getData();
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
   };
-
 
   return (
     <AppTableContainer>
@@ -46,12 +50,16 @@ const ZaloView = () => {
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell sx={{ border: "0 none" }}>
-                <AppLoader />
-              </TableCell>
+              <TableCell sx={{ border: "0 none" }}></TableCell>
             </TableRow>
           ) : (
-            zaloTemplates.map((data) => <TableItem data={data} key={data.id} onSelectContactsForDelete={onSelectContactsForDelete} />)
+            zaloTemplates.map((data) => (
+              <TableItem
+                data={data}
+                key={data.id}
+                onSelectContactsForDelete={onSelectContactsForDelete}
+              />
+            ))
           )}
         </TableBody>
       </Table>

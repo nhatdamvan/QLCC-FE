@@ -3,7 +3,7 @@ import { BsPersonLinesFill, BsFacebook } from "react-icons/bs";
 import { AiOutlineBarChart, AiFillSetting, AiFillMail } from "react-icons/ai";
 import { MdGroups } from "react-icons/md";
 import { SiZalo } from "react-icons/si";
-import { BiNetworkChart, BiCategoryAlt } from "react-icons/bi";
+import { BiNetworkChart, BiCategoryAlt, BiSupport } from "react-icons/bi";
 import { HiUserGroup, HiUsers } from "react-icons/hi";
 import { FaSms } from "react-icons/fa";
 import { GrCatalog } from "react-icons/gr";
@@ -11,7 +11,6 @@ import { ImUserTie } from "react-icons/im";
 import { FaPhoneVolume, FaUserTie, FaUserShield } from "react-icons/fa";
 import { BsChatDots } from "react-icons/bs";
 import { RoutePermittedRole } from "@crema/constants/AppEnums";
-
 const routesConfig = [
   {
     id: "apps",
@@ -20,32 +19,33 @@ const routesConfig = [
     type: "group",
     children: [
       {
-        id: "crm",
-        title: "CRM",
-        messageId: "sidebar.app.dashboard.crm",
-        type: "item",
-        permittedRole: [RoutePermittedRole.User, , RoutePermittedRole.Admin],
-        icon: <AiOutlineBarChart />,
-        url: "/dashboards/crm",
-      },
-      {
         id: "cskh",
         title: "CSKH",
         messageId: "sidebar.apps.cskh",
-        type: "item",
-        permittedRole: [RoutePermittedRole.User],
-        icon: <FaPhoneVolume />,
-        url: "/cskh",
+        icon: <BiSupport />,
+        type: "collapse",
+        children: [
+          {
+            id: "cskh",
+            title: "CSKH",
+            messageId: "sidebar.apps.cskh.ticket",
+            type: "item",
+            permittedRole: [RoutePermittedRole.User],
+            icon: <FaPhoneVolume />,
+            url: "/cskh",
+          },
+          {
+            id: "chat",
+            title: "Chat",
+            messageId: "sidebar.apps.cskh.chat",
+            type: "item",
+            permittedRole: [RoutePermittedRole.User],
+            icon: <BsChatDots />,
+            url: "/apps/chat",
+          },
+        ],
       },
-      {
-        id: "chat",
-        title: "Chat",
-        messageId: "sidebar.apps.chat",
-        type: "item",
-        permittedRole: [RoutePermittedRole.User],
-        icon: <BsChatDots />,
-        url: "/apps/chat",
-      },
+
       {
         id: "marketing",
         title: "Marketing",

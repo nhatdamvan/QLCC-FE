@@ -20,11 +20,7 @@ const CreateMarketingSms = React.lazy(() =>
 const CreateMarketingZalo = React.lazy(() =>
   import("../../modules/maketing/CreateWithZalo")
 );
-const ToDo = React.lazy(() => import("../../modules/apps/ToDo"));
-const Contact = React.lazy(() => import("../../modules/apps/Contact"));
-const ScrumBoard = React.lazy(() => import("../../modules/apps/ScrumBoard"));
 const Chat = React.lazy(() => import("../../modules/apps/Chat"));
-const Wall = React.lazy(() => import("../../modules/apps/Wall"));
 const EmailTemplate = React.lazy(() => import("../../modules/SettingEmail"));
 const CreateEmailTemplate = React.lazy(() =>
   import("../../modules/SettingEmail/CreateEmailTemplate")
@@ -38,7 +34,9 @@ const CreateZaloTemplate = React.lazy(() =>
 const ZaloTemplate = React.lazy(() => import("../../modules/ZaloTemplate"));
 const Category = React.lazy(() => import("../../modules/categories"));
 
-const CreateCategory = React.lazy(() => import("../../modules/categories/addcategories"));
+const CreateCategory = React.lazy(() =>
+  import("../../modules/categories/addcategories")
+);
 const Setting = React.lazy(() => import("../../modules/setting"));
 const Catalog = React.lazy(() => import("../../modules/catalog"));
 const Roles = React.lazy(() => import("../../modules/roles"));
@@ -133,16 +131,6 @@ export const appsConfig = [
     path: "/Catalog",
     element: <Catalog />,
   },
-  // {
-  //   permittedRole: RoutePermittedRole.User,
-  //   path: '/cskh',
-  //   element: <Cskh />,
-  // },
-  // {
-  //   permittedRole: RoutePermittedRole.User,
-  //   path: '/cskh',
-  //   element: <Cskh />,
-  // },
   {
     permittedRole: RoutePermittedRole.User,
     path: "/marketing",
@@ -170,23 +158,8 @@ export const appsConfig = [
   },
   {
     permittedRole: RoutePermittedRole.User,
-    path: [
-      "/apps/todo/label/:label",
-      "/apps/todo/label/:label/:id",
-      "/apps/todo/:folder",
-      "/apps/todo/:folder/:id",
-    ],
-    element: <ToDo />,
-  },
-  {
-    permittedRole: RoutePermittedRole.User,
     path: "/apps/todo",
     element: <Navigate to="/apps/todo/all" />,
-  },
-  {
-    permittedRole: RoutePermittedRole.User,
-    path: ["/apps/contact/folder/:name", "/apps/contact/label/:name"],
-    element: <Contact />,
   },
   {
     permittedRole: RoutePermittedRole.User,
@@ -197,15 +170,5 @@ export const appsConfig = [
     permittedRole: RoutePermittedRole.User,
     path: ["/apps/chat"],
     element: <Chat />,
-  },
-  {
-    permittedRole: RoutePermittedRole.User,
-    path: ["/apps/scrum-board/:id", "/apps/scrum-board"],
-    element: <ScrumBoard />,
-  },
-  {
-    permittedRole: RoutePermittedRole.User,
-    path: ["/apps/wall"],
-    element: <Wall />,
   },
 ];

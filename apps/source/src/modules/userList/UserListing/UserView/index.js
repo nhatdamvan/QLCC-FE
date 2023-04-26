@@ -1,9 +1,7 @@
 import AppConfirmDialog from "@crema/components/AppConfirmDialog";
-import AppLoader from "@crema/components/AppLoader";
 import AppTableContainer from "@crema/components/AppTableContainer";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import IntlMessages from "@crema/helpers/IntlMessages";
-import jwtAxios from "@crema/services/auth/JWT";
 import {
   Table,
   TableBody,
@@ -12,17 +10,20 @@ import {
   TableRow,
 } from "@mui/material";
 import { useState } from "react";
-import { useUserActionContext, useUserContext } from "../../context/UserContextProvider";
+import {
+  useUserActionContext,
+  useUserContext,
+} from "../../context/UserContextProvider";
 import TableHeading from "./TableHeading";
 import TableItem from "./TableItem";
+import { deleteData } from "@crema/hooks/APIHooks";
 
 const UserView = () => {
   const { loading, users } = useUserContext();
 
-  const { getData } = useUserActionContext()
+  const { getData } = useUserActionContext();
 
   const infoViewActionsContext = useInfoViewActionsContext();
-  const { fetchSuccess } = infoViewActionsContext;
 
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemSelected, setItemSelected] = useState("");
@@ -33,17 +34,14 @@ const UserView = () => {
   };
 
   const handleDelete = async () => {
-    try {
-      setDeleteDialogOpen(false);
-      const response = await jwtAxios.delete(`user/${itemSelected}`);
-      if (response) {
-        fetchSuccess();
-        infoViewActionsContext.showMessage(response.data.Message);
-      }
-      getData();
-    } catch (error) {
-      infoViewActionsContext.fetchError(error.message);
-    }
+    setDeleteDialogOpen(false);
+    deleteData(`user/${itemSelected}`, infoViewActionsContext)
+      .then(() => {
+        getData();
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
   };
 
   return (
@@ -55,9 +53,7 @@ const UserView = () => {
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell sx={{ border: "0 none" }}>
-                <AppLoader />
-              </TableCell>
+              <TableCell sx={{ border: "0 none" }}></TableCell>
             </TableRow>
           ) : (
             users.map((data) => (

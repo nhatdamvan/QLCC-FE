@@ -1,13 +1,13 @@
 import AppLoader from "@crema/components/AppLoader";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
-import jwtAxios from "@crema/services/auth/JWT";
 import { Formik } from "formik";
 import moment from "moment";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import * as yup from "yup";
 import CustomerForm from "./CustomerForm";
 import CustomerGroupContextProvider from "../../customerGroup/Context/CustomerGroupContexProvider";
+import { getData, postData, putData } from "@crema/hooks/APIHooks";
 
 const phoneRegExp =
   /^((\\+[1-9]{1,4}[ \\-]*)|(\\([0-9]{2,3}\\)[ \\-]*)|([0-9]{2,4})[ \\-]*)*?[0-9]{3,4}?[ \\-]*[0-9]{3,4}?$/;
@@ -40,14 +40,8 @@ const CreateCustomer = () => {
 
   const [selectedCustomerGroup, setSelectedCustomerGroup] = useState([]);
   const [codeCustomer, setCodeCustomer] = useState("");
-  const [loadingGetCode, setLoadingGetCode] = useState(false);
-  const [loadingSubmit, setLoadingSubbmit] = useState(false);
-
   const [listSex, setListSex] = useState([]);
-  const [loadingSex, setLoadingSex] = useState(true);
-
-  const [data, setData] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
     getListSex();
@@ -55,131 +49,112 @@ const CreateCustomer = () => {
 
   useEffect(() => {
     if (id !== "Create") {
-      getData();
+      getDataDetail();
     } else {
       getCodeCustomer();
     }
   }, []);
 
-  const getData = async () => {
-    setLoading(true);
-    try {
-      const dataResult = await jwtAxios.get(`customer/${id}`);
-      setData(dataResult.data.data);
-      setSelectedCustomerGroup(
-        dataResult.data.data.CustomerGroups
-          ? [dataResult.data.data.CustomerGroups]
-          : []
-      );
-      setLoading(false);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getCodeCustomer = async () => {
-    setLoadingGetCode(true);
-    jwtAxios
-      .post(`generationCode`, {
-        code: "KH",
-      })
-      .then((request) => {
-        setCodeCustomer(request.data.data);
+  const getDataDetail = async () => {
+    getData(`customer/${id}`, infoViewActionsContext)
+      .then(({ data }) => {
+        setData(data);
+        setSelectedCustomerGroup(
+          data.CustomerGroups ? [data.CustomerGroups] : []
+        );
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
+      });
+  };
+
+  const getCodeCustomer = () => {
+    postData("generationCode", infoViewActionsContext, {
+      code: "KH",
+    })
+      .then(({ data }) => {
+        setCodeCustomer(data);
       })
-      .finally(() => {
-        setLoadingGetCode(false);
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
       });
   };
 
   const handleCreateCustomer = (data) => {
-    setLoadingSubbmit(true);
     const newData = {
       ...data,
       CustomerGroups: selectedCustomerGroup[0]?.id || undefined,
       AvatarFile: data.AvatarFile || undefined,
     };
 
-    jwtAxios
-      .post("customer", newData)
+    postData("customer", infoViewActionsContext, newData)
       .then(() => {
         navigate("/Customer/List");
-        infoViewActionsContext.showMessage("Success!");
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
   };
 
   const handleEditCustormer = (data) => {
-    setLoadingSubbmit(true);
     const newData = {
       ...data,
       CustomerGroups: selectedCustomerGroup[0]?.id || undefined,
       AvatarFile: data.AvatarFile || undefined,
     };
 
-    jwtAxios
-      .put("customer", newData)
-      .then(() => {
-        navigate("/Customer/List");
-        infoViewActionsContext.showMessage("Success!");
+    putData("customer", infoViewActionsContext, newData)
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
   };
 
-  const getListSex = async () => {
-    try {
-      setLoadingSex(true);
-      const dataResult = await jwtAxios.get(`getByGroupCode/Sex`);
-      setListSex(dataResult.data.datas);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoadingSex(false);
-    }
+  const getListSex = () => {
+    getData("getByGroupCode/Sex", infoViewActionsContext)
+      .then(({ datas }) => {
+        setListSex(datas);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
   };
+
+  const loading = useMemo(
+    () => !(listSex.length && (id === "Create" ? codeCustomer : data)),
+    [listSex, codeCustomer, data, id]
+  );
 
   return (
     <CustomerGroupContextProvider>
-      {loadingGetCode || loadingSex || loading ? (
+      {loading ? (
         <AppLoader />
       ) : (
         <Formik
           validateOnBlur={true}
           initialValues={{
-            id: data.id ? data.id : "",
-            Code: data.Code ? data.Code : codeCustomer,
+            id: data?.id ? data?.id : "",
+            Code: data?.Code ? data?.Code : codeCustomer,
             // To do
-            AvatarFile: data.AvatarFile
-              ? data.AvatarFile
+            AvatarFile: data?.AvatarFile
+              ? data?.AvatarFile
               : "640994fd3dcffe32d3ef6986",
-            Email: data.Email ? data.Email : "",
-            PhonenumberFirst: data.PhonenumberFirst
-              ? data.PhonenumberFirst
+            Email: data?.Email ? data?.Email : "",
+            PhonenumberFirst: data?.PhonenumberFirst
+              ? data?.PhonenumberFirst
               : "",
-            Name: data.Name ? data.Name : "",
-            BirthDay: data.BirthDay ? data.BirthDay : moment(),
-            Sex: data.Sex ? data.Sex : listSex[0].Code,
-            CCCD: data.CCCD ? data.CCCD : "",
-            Zalo: data.Zalo ? data.Zalo : "",
-            Facebook: data.Facebook ? data.Facebook : "",
-            Address: data.Address ? data.Address : "",
+            Name: data?.Name ? data?.Name : "",
+            BirthDay: data?.BirthDay ? data?.BirthDay : moment(),
+            Sex: data?.Sex ? data?.Sex : listSex[0].Code,
+            CCCD: data?.CCCD ? data?.CCCD : "",
+            Zalo: data?.Zalo ? data?.Zalo : "",
+            Facebook: data?.Facebook ? data?.Facebook : "",
+            Address: data?.Address ? data?.Address : "",
             CustomerGroups: "",
-            AvatarPreview: data.AvatarFile
-              ? `https://crmic2-dev.vercel.app/file/${data.AvatarFile}`
+            AvatarPreview: data?.AvatarFile
+              ? `https://crmic2-dev.vercel.app/file/${data?.AvatarFile}`
               : "",
           }}
           validationSchema={validationSchema}
@@ -197,7 +172,6 @@ const CreateCustomer = () => {
               setFieldValue={setFieldValue}
               selectedCustomerGroup={selectedCustomerGroup}
               setSelectedCustomerGroup={setSelectedCustomerGroup}
-              loadingSubmit={loadingSubmit}
               listSex={listSex}
             />
           )}

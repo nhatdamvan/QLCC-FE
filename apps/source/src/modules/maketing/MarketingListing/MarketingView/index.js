@@ -1,9 +1,7 @@
 import AppConfirmDialog from "@crema/components/AppConfirmDialog";
-import AppLoader from "@crema/components/AppLoader";
 import AppTableContainer from "@crema/components/AppTableContainer";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import IntlMessages from "@crema/helpers/IntlMessages";
-import jwtAxios from "@crema/services/auth/JWT";
 import {
   Table,
   TableBody,
@@ -16,6 +14,7 @@ import { useMarketingContext } from "../../context/MarketingContextProvider";
 import TableHeading from "./TableHeading";
 import TableItem from "./TableItem";
 import { useMarketingActionsContext } from "../../context/MarketingContextProvider";
+import { deleteData } from "@crema/hooks/APIHooks";
 
 const MarketingView = () => {
   const { loading, marketings } = useMarketingContext();
@@ -30,19 +29,15 @@ const MarketingView = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleDelete = async () => {
-    try {
-      setDeleteDialogOpen(false);
-      const response = await jwtAxios.delete(
-        `campaingnsDelete/${itemSelected}`
-      );
-      if (response) {
-        infoViewActionsContext.showMessage(response.data.Message);
-      }
-      getData();
-    } catch (error) {
-      infoViewActionsContext.fetchError(error.message);
-    }
+  const handleDelete = () => {
+    setDeleteDialogOpen(false);
+    deleteData(`campaingnsDelete/${itemSelected}`, infoViewActionsContext)
+      .then(() => {
+        getData();
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
   };
 
   return (
@@ -55,9 +50,7 @@ const MarketingView = () => {
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell sx={{ border: "0 none" }}>
-                <AppLoader />
-              </TableCell>
+              <TableCell sx={{ border: "0 none" }}></TableCell>
             </TableRow>
           ) : (
             marketings.map((data) => (

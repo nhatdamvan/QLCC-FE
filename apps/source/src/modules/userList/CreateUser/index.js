@@ -2,7 +2,6 @@ import AppLoader from "@crema/components/AppLoader";
 import AppTooltip from "@crema/components/AppTooltip";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
 import IntlMessages from "@crema/helpers/IntlMessages";
-import jwtAxios from "@crema/services/auth/JWT";
 import { Card } from "@mui/material";
 import { Formik } from "formik";
 import { useEffect, useState } from "react";
@@ -13,6 +12,7 @@ import UserForm from "./UserForm";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { Box } from "@mui/system";
 import RolesContextProvider from "../../roles/context/RolesContextProvider";
+import { getData, postData, putData } from "@crema/hooks/APIHooks";
 
 const validationSchema = yup.object({
   Username: yup.string().required("Required"),
@@ -29,73 +29,55 @@ const CreateUser = () => {
 
   const [selectedUserGroup, setSelectedUserGroup] = useState([]);
   const [selectedRoles, setSelectedRoles] = useState([]);
-  const [loadingSubmit, setLoadingSubbmit] = useState(false);
-  const [data, setData] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
     if (id !== "Create") {
-      getData();
+      getDataDetail();
     }
   }, []);
 
-  const getData = async () => {
-    try {
-      setLoading(true);
-      const dataResult = await jwtAxios.get(`user/${id}`);
-      setData(dataResult.data.data);
-      setSelectedRoles(dataResult.data.data.Roles);
-      setSelectedUserGroup(
-        dataResult.data.data.UserGroups ? [dataResult.data.data.UserGroups] : []
-      );
-      setLoading(false);
-    } catch (error) {
-      console.log(error);
-    }
+  const getDataDetail = async () => {
+    getData(`user/${id}`, infoViewActionsContext)
+      .then(({ data }) => {
+        setData(data);
+        setSelectedRoles(data.Roles);
+        setSelectedUserGroup(data.UserGroups ? [data.UserGroups] : []);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
   };
 
   const handleCreateUser = (data) => {
-    setLoadingSubbmit(true);
-    jwtAxios
-      .post("user", {
-        ...data,
-        Roles: selectedRoles.map((item) => item.id),
-        UserGroups: selectedUserGroup[0]?.id || undefined,
-        AvatarFile: data.AvatarFile || undefined,
-      })
+    postData("user", infoViewActionsContext, {
+      ...data,
+      Roles: selectedRoles.map((item) => item.id),
+      UserGroups: selectedUserGroup[0]?.id || undefined,
+      AvatarFile: data.AvatarFile || undefined,
+    })
       .then(() => {
         navigate("/user-manager");
         infoViewActionsContext.showMessage("Success!");
       })
       .catch((error) => {
-        console.log(error, "eror");
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
   };
 
   const handleEditUser = (data) => {
-    setLoadingSubbmit(true);
-
-    jwtAxios
-      .put("user", {
-        ...data,
-        id: id,
-        Roles: selectedRoles.map((item) => item.id),
-        UserGroups: selectedUserGroup[0]?.id || undefined,
-        AvatarFile: data.AvatarFile || undefined,
-      })
-      .then(() => {
-        navigate("/user-manager");
-        infoViewActionsContext.showMessage("Success!");
+    putData("user", infoViewActionsContext, {
+      ...data,
+      id: id,
+      Roles: selectedRoles.map((item) => item.id),
+      UserGroups: selectedUserGroup[0]?.id || undefined,
+      AvatarFile: data.AvatarFile || undefined,
+    })
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingSubbmit(false);
       });
   };
 
@@ -120,20 +102,20 @@ const CreateUser = () => {
           </AppTooltip>
         </Box>
         <Card>
-          {loading ? (
+          {!(id === "Create" ? true : data) ? (
             <AppLoader />
           ) : (
             <Formik
               validateOnBlur={true}
               initialValues={{
-                id: data.id ? data.id : "",
-                Username: data.Username ? data.Username : "",
-                Name: data.Name ? data.Name : "",
-                Email: data.Email ? data.Email : "",
-                Phonenumber: data.Phonenumber ? data.Phonenumber : "",
-                Address: data.Address ? data.Address : "",
-                AvatarPreview: data.AvatarFile
-                  ? `https://crmic2-dev.vercel.app/file/${data.AvatarFile}`
+                id: data?.id ? data?.id : "",
+                Username: data?.Username ? data?.Username : "",
+                Name: data?.Name ? data?.Name : "",
+                Email: data?.Email ? data?.Email : "",
+                Phonenumber: data?.Phonenumber ? data?.Phonenumber : "",
+                Address: data?.Address ? data?.Address : "",
+                AvatarPreview: data?.AvatarFile
+                  ? `https://crmic2-dev.vercel.app/file/${data?.AvatarFile}`
                   : "",
               }}
               validationSchema={validationSchema}
@@ -151,7 +133,6 @@ const CreateUser = () => {
                   setFieldValue={setFieldValue}
                   selectedUserGroup={selectedUserGroup}
                   setSelectedUserGroup={setSelectedUserGroup}
-                  loadingSubmit={loadingSubmit}
                   selectedRoles={selectedRoles}
                   setSelectedRoles={setSelectedRoles}
                 />

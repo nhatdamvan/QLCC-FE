@@ -43,7 +43,6 @@ const CustomerSupport = () => {
         </Box>
 
         <CustomerSupportListing />
-        <AppInfoView />
       </CustomerSupportContextProvider>
     </UserContextProvider>
   );

@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import Dialog from '@mui/material/Dialog';
-import IconButton from '@mui/material/IconButton';
-import 'slick-carousel/slick/slick.css';
-import 'slick-carousel/slick/slick-theme.css';
-import Slider from 'react-slick';
-import Zoom from '@mui/material/Zoom';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import PropTypes from 'prop-types';
-import Box from '@mui/material/Box';
-import MediaSlider from './MediaSlider';
+import React, { useEffect, useState } from "react";
+import Dialog from "@mui/material/Dialog";
+import IconButton from "@mui/material/IconButton";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+import Slider from "react-slick";
+import Zoom from "@mui/material/Zoom";
+import HighlightOffIcon from "@mui/icons-material/HighlightOff";
+import PropTypes from "prop-types";
+import Box from "@mui/material/Box";
+import MediaSlider from "./MediaSlider";
 
 const settings = {
   dots: false,
@@ -21,21 +21,21 @@ const settings = {
 };
 
 const renderRow = (data, index) => {
-  if (data.mime_type.startsWith('image')) {
+  if (data.type === "image") {
     return (
       <img
-        key={'IMAGE-' + index}
-        src={data.url}
-        alt={data.name ? data.name : 'detail view'}
+        key={"IMAGE-" + index}
+        src={data.payload.thumbnail}
+        alt={"detail view " + index}
       />
     );
-  } else if (data.mime_type.startsWith('docs')) {
+  } else if (data.type === "file") {
     return (
       <div className="embed-responsive">
         <iframe
-          key={'DOC-' + index}
-          src={data.url}
-          title={data.name ? data.name : 'detail view'}
+          key={"DOC-" + index}
+          src={data.payload.url}
+          title={"detail view" + index}
         />
       </div>
     );
@@ -43,9 +43,9 @@ const renderRow = (data, index) => {
     return (
       <div className="embed-responsive">
         <iframe
-          key={'DOC-' + index}
-          src={data.url}
-          title={data.name ? data.name : 'detail view'}
+          key={"Media" + index}
+          src={data.payload.url}
+          title={"detail view" + index}
         />
       </div>
     );
@@ -72,27 +72,27 @@ const AppMedialViewer = ({ index, medias, onClose }) => {
       open={isOpen}
       onClose={onClose}
       sx={{
-        '& .MuiDialog-paperFullScreen': {
-          display: 'flex',
-          flexDirection: 'column',
+        "& .MuiDialog-paperFullScreen": {
+          display: "flex",
+          flexDirection: "column",
         },
       }}
       TransitionComponent={Transition}
     >
       <Box
         sx={{
-          position: 'relative',
-          backgroundColor: 'rgb(49, 53, 65)',
+          position: "relative",
+          backgroundColor: "rgb(49, 53, 65)",
           color: (theme) => theme.palette.common.white,
           flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <IconButton
           sx={{
             color: (theme) => theme.palette.common.white,
-            position: 'absolute',
+            position: "absolute",
             left: 10,
             top: 10,
             zIndex: 1,

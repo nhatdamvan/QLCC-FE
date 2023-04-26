@@ -4,13 +4,12 @@ import IntlMessages from "@crema/helpers/IntlMessages";
 import { Box, Button, FormControlLabel, Grid } from "@mui/material";
 import { Form } from "formik";
 import PropTypes from "prop-types";
-import { LoadingButton } from "@mui/lab";
 import SaveIcon from "@mui/icons-material/Save";
 import "react-quill/dist/quill.snow.css";
 import { useState } from "react";
 import { Android12Switch } from "libs/modules/src/lib/muiComponents/inputs/Switches/Customization";
 
-const CategoryForm = ({ loadingSubmit, values }) => {
+const CategoryForm = ({ values }) => {
   const [isEdit, setIsEdit] = useState(values?.id ? true : false);
 
   const handleChange = (event) => {
@@ -81,7 +80,6 @@ const CategoryForm = ({ loadingSubmit, values }) => {
               }}
               variant="outlined"
               name="Name"
-              autoFocus
               disabled={isEdit}
             />
           </Box>
@@ -108,7 +106,6 @@ const CategoryForm = ({ loadingSubmit, values }) => {
               }}
               variant="outlined"
               name="GroupCode"
-              autoFocus
               disabled={isEdit}
             />
           </Box>
@@ -136,7 +133,6 @@ const CategoryForm = ({ loadingSubmit, values }) => {
               }}
               variant="outlined"
               name="GroupName"
-              autoFocus
               disabled={isEdit}
             />
           </Box>
@@ -163,7 +159,6 @@ const CategoryForm = ({ loadingSubmit, values }) => {
               }}
               variant="outlined"
               name="Sort"
-              autoFocus
               disabled={isEdit}
             />
           </Box>
@@ -176,32 +171,19 @@ const CategoryForm = ({ loadingSubmit, values }) => {
               textAlign: "right",
             }}
           >
-            {loadingSubmit ? (
-              <LoadingButton
-                sx={{
-                  position: "relative",
-                  minWidth: 100,
-                }}
-                variant="contained"
-                loading={true}
-              >
-                <IntlMessages id="common.saveChanges" />
-              </LoadingButton>
-            ) : (
-              <Button
-                sx={{
-                  position: "relative",
-                  minWidth: 100,
-                }}
-                color="primary"
-                variant="outlined"
-                type="submit"
-                startIcon={<SaveIcon />}
-                disabled={isEdit}
-              >
-                <IntlMessages id="common.save" />
-              </Button>
-            )}
+            <Button
+              sx={{
+                position: "relative",
+                minWidth: 100,
+              }}
+              color="primary"
+              variant="outlined"
+              type="submit"
+              startIcon={<SaveIcon />}
+              disabled={isEdit}
+            >
+              <IntlMessages id="common.save" />
+            </Button>
           </Box>
         </Grid>
       </Grid>
@@ -214,5 +196,4 @@ export default CategoryForm;
 CategoryForm.propTypes = {
   values: PropTypes.object.isRequired,
   setFieldValue: PropTypes.func,
-  loadingSubmit: PropTypes.bool.isRequired,
 };

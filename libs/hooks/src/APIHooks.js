@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import _ from "lodash";
-import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
+import {
+  useInfoViewActionsContext,
+  useInfoViewContext,
+} from "@crema/context/InfoViewContextProvider";
 import { isRequestSuccessful, sanitizeData } from "@crema/helpers";
-import jwtAxios from "@crema/services/axios";
+import Axios from "@crema/services/axios";
+import { useDebounce } from "./useDebounce";
+import jwtAxios from "@crema/services/auth/JWT";
 
 export const useGetDataApi = (
   url,
@@ -45,15 +50,8 @@ export const useGetDataApi = (
           ...trimObjectValues(queryParams),
         };
       }
-      jwtAxios
-        .get(initialUrl, { params: sanitizeData(params) })
+      Axios.get(initialUrl, { params: sanitizeData(params) })
         .then((data) => {
-          console.log(
-            initialUrl,
-            data.data,
-            didCancelRef.current,
-            isRequestSuccessful(data.status)
-          );
           resStateRef.current = false;
           if (!didCancelRef.current) {
             if (isRequestSuccessful(data.status)) {
@@ -100,6 +98,162 @@ export const useGetDataApi = (
   ];
 };
 
+export const useGetData = (
+  url,
+  initialFilter = "",
+  sortBy = "UpdatedDate",
+  asc = -1,
+  size = 10,
+  allowApiCall = true
+) => {
+  const infoViewActionsContext = useInfoViewActionsContext();
+  const { loading } = useInfoViewContext();
+
+  const [apiData, setData] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [search, setSearchQuery] = useState(initialFilter);
+
+  const [orderBy, setOrderBy] = useState("");
+  const [order, setOrder] = useState("asc");
+
+  const [sort, setSort] = useState({ [sortBy]: asc });
+
+  const debouncedSearch = useDebounce(search, 500);
+
+  useEffect(() => {
+    if (allowApiCall) {
+      getData();
+    }
+  }, [debouncedSearch, sort, page]);
+
+  useEffect(() => {
+    if (orderBy) {
+      setSort({
+        [orderBy]: order === "desc" ? -1 : 1,
+      });
+    }
+  }, [orderBy, order]);
+
+  const getData = async (filter = undefined) => {
+    try {
+      const data = await postData(url, infoViewActionsContext, {
+        ValueFilter: filter || debouncedSearch,
+        Sort: sort,
+        PageIndex: page,
+        PageSize: size,
+      });
+      setTotalCount(data.totalCount);
+      setData(data.datas);
+    } catch (error) {
+      infoViewActionsContext.fetchError(error.message);
+    }
+  };
+
+  const onSearch = (e) => {
+    setSearchQuery(e.target.value);
+    setPage(1);
+  };
+
+  const handleRequestSort = (event, property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+    setPage(1);
+  };
+
+  return [
+    { loading, apiData, order, orderBy, totalCount, page },
+    { onSearch, handleRequestSort, setPage, getData, setData },
+  ];
+};
+
+export const postData = (
+  url,
+  infoViewContext,
+  payload,
+  isHideLoader = false,
+  headers = {}
+) => {
+  const { fetchStart, fetchSuccess } = infoViewContext;
+  return new Promise((resolve, reject) => {
+    if (!isHideLoader) fetchStart();
+    jwtAxios
+      .post(url, sanitizeData(payload), headers)
+      .then((data) => {
+        return handleApiResponse(url, fetchSuccess, data, resolve, reject);
+      })
+      .catch((error) => {
+        return handleAPIError(url, fetchSuccess, error, reject);
+      });
+    return Promise.resolve();
+  });
+};
+
+export const putData = (
+  url,
+  infoViewContext,
+  payload,
+  isHideLoader = false
+) => {
+  const { fetchStart, fetchSuccess } = infoViewContext;
+  return new Promise((resolve, reject) => {
+    if (!isHideLoader) fetchStart();
+    jwtAxios
+      .put(url, sanitizeData(payload))
+      .then((data) => {
+        return handleApiResponse(url, fetchSuccess, data, resolve, reject);
+      })
+      .catch((error) => {
+        return handleAPIError(url, fetchSuccess, error, reject);
+      });
+    return Promise.resolve();
+  });
+};
+
+export const getData = (
+  url,
+  infoViewContext,
+  params = {},
+  isHideLoader = false,
+  headers
+) => {
+  const { fetchStart, fetchSuccess } = infoViewContext;
+  return new Promise((resolve, reject) => {
+    if (!isHideLoader) fetchStart();
+    jwtAxios
+      .get(url, { params: sanitizeData(params), headers })
+      .then((data) => {
+        return handleApiResponse(url, fetchSuccess, data, resolve, reject);
+      })
+      .catch((error) => {
+        return handleAPIError(url, fetchSuccess, error, reject);
+      });
+    return Promise.resolve();
+  });
+};
+
+export const deleteData = (
+  url,
+  infoViewContext,
+  params = {},
+  isHideLoader = false
+) => {
+  const { fetchStart, fetchSuccess } = infoViewContext;
+  return new Promise((resolve, reject) => {
+    if (!isHideLoader) fetchStart();
+    jwtAxios
+      .delete(url, { params })
+      .then((data) => {
+        return handleApiResponse(url, fetchSuccess, data, resolve, reject);
+      })
+      .catch((error) => {
+        return handleAPIError(url, fetchSuccess, error, reject);
+      });
+    return Promise.resolve();
+  });
+};
+
 export const trimObjectValues = (obj) => {
   if (_.isEmpty(obj)) {
     return obj;
@@ -140,8 +294,7 @@ export const postDataApi = (
   const { fetchStart, fetchSuccess } = infoViewContext;
   return new Promise((resolve, reject) => {
     if (!isHideLoader) fetchStart();
-    jwtAxios
-      .post(url, sanitizeData(payload), headers ? { headers } : {})
+    Axios.post(url, sanitizeData(payload), headers ? { headers } : {})
       .then((data) => {
         return handleApiResponse(url, fetchSuccess, data, resolve, reject);
       })
@@ -161,8 +314,7 @@ export const putDataApi = (
   const { fetchStart, fetchSuccess } = infoViewContext;
   return new Promise((resolve, reject) => {
     if (!isHideLoader) fetchStart();
-    jwtAxios
-      .put(url, sanitizeData(payload))
+    Axios.put(url, sanitizeData(payload))
       .then((data) => {
         return handleApiResponse(url, fetchSuccess, data, resolve, reject);
       })
@@ -183,8 +335,7 @@ export const getDataApi = (
   const { fetchStart, fetchSuccess } = infoViewContext;
   return new Promise((resolve, reject) => {
     if (!isHideLoader) fetchStart();
-    jwtAxios
-      .get(url, { params: sanitizeData(params), headers })
+    Axios.get(url, { params: sanitizeData(params), headers })
       .then((data) => {
         return handleApiResponse(url, fetchSuccess, data, resolve, reject);
       })
@@ -204,8 +355,7 @@ export const deleteDataApi = (
   const { fetchStart, fetchSuccess } = infoViewContext;
   return new Promise((resolve, reject) => {
     if (!isHideLoader) fetchStart();
-    jwtAxios
-      .delete(url, { params })
+    Axios.delete(url, { params })
       .then((data) => {
         return handleApiResponse(url, fetchSuccess, data, resolve, reject);
       })
@@ -227,14 +377,13 @@ export const uploadDataApi = (
   const { fetchStart, fetchSuccess } = infoViewContext;
   return new Promise((resolve, reject) => {
     if (!isHideLoader) fetchStart();
-    jwtAxios
-      .post(url, payload, {
-        onUploadProgress,
-        headers: {
-          "content-type": "application/x-www-form-urlencoded",
-        },
-        responseType: allowDownload ? "arraybuffer" : "stream",
-      })
+    Axios.post(url, payload, {
+      onUploadProgress,
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+      },
+      responseType: allowDownload ? "arraybuffer" : "stream",
+    })
       .then((data) => {
         return handleApiResponse(url, fetchSuccess, data, resolve, reject);
       })
@@ -254,12 +403,11 @@ export const uploadPutDataApi = (
   const { fetchStart, fetchSuccess } = infoViewContext;
   return new Promise((resolve, reject) => {
     if (!isHideLoader) fetchStart();
-    jwtAxios
-      .put(url, payload, {
-        headers: {
-          "content-type": "multipart/form-data",
-        },
-      })
+    Axios.put(url, payload, {
+      headers: {
+        "content-type": "multipart/form-data",
+      },
+    })
       .then((data) => {
         return handleApiResponse(url, fetchSuccess, data, resolve, reject);
       })

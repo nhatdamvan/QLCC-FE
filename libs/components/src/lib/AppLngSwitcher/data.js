@@ -1,38 +1,13 @@
 const languageData = [
   {
-    languageId: 'vietnam',
-    locale: 'vi',
-    name: 'Tiếng Việt',
+    languageId: "vietnam",
+    locale: "vi",
+    name: "Tiếng Việt",
   },
   {
-    languageId: 'english',
-    locale: 'en',
-    name: 'English',
-  },
-  {
-    languageId: 'chinese',
-    locale: 'zh',
-    name: '中国人',
-  },
-  {
-    languageId: 'spanish',
-    locale: 'es',
-    name: 'Español',
-  },
-  {
-    languageId: 'french',
-    locale: 'fr',
-    name: 'français',
-  },
-  {
-    languageId: 'italian',
-    locale: 'it',
-    name: 'Italiano',
-  },
-  {
-    languageId: 'saudi-arabia',
-    locale: 'ar',
-    name: 'عربي',
+    languageId: "english",
+    locale: "en",
+    name: "English",
   },
 ];
 export default languageData;

@@ -28,18 +28,16 @@ import SearchIcon from "@mui/icons-material/Search";
 import { LoadingButton } from "@mui/lab";
 import { Form } from "formik";
 import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
-import jwtAxios from "@crema/services/auth/JWT";
 import { Android12Switch } from "libs/modules/src/lib/muiComponents/inputs/Switches/Customization";
 import SaveIcon from "@mui/icons-material/Save";
 import AppSelectItemDialog from "@crema/components/AppSelectItemDialog";
 import { useIntl } from "react-intl";
+import { postData } from "@crema/hooks/APIHooks";
 
 const CreateMarketingZaloForm = ({
   values,
   setFieldValue,
-  isSubmitting,
   typeSourceData,
-  loading,
   templates,
   setSelectedCustomer,
   selectedCustomer,
@@ -74,7 +72,6 @@ const CreateMarketingZaloForm = ({
 
   const [isOpenDialog, setIsOpenDialog] = useState(false);
   const [isOpenDialogGroup, setIsOpenGroupDialog] = useState(false);
-  const [loadingPreview, setLoadingPreview] = useState(false);
   const [isEdit, setIsEdit] = useState(values?.id ? true : false);
 
   const handleOpenDialog = () => {
@@ -94,20 +91,15 @@ const CreateMarketingZaloForm = ({
   };
 
   const handlePreview = () => {
-    setLoadingPreview(true);
-    jwtAxios
-      .post("sendPreview", {
-        TemplateId: values.TempalteZaloId,
-        TypeCampaingnsCode: values.TypeCampaingnsCode,
-      })
-      .then((response) => {
-        infoViewActionsContext.showMessage(response.data.message);
+    postData("sendPreview", infoViewActionsContext, {
+      TemplateId: values.TempalteZaloId,
+      TypeCampaingnsCode: values.TypeCampaingnsCode,
+    })
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingPreview(false);
       });
   };
 
@@ -425,7 +417,6 @@ const CreateMarketingZaloForm = ({
                 m: 4,
               }}
               variant="contained"
-              loading={loadingPreview}
               onClick={handlePreview}
               disabled={isEdit}
               startIcon={<SaveIcon />}
@@ -441,7 +432,6 @@ const CreateMarketingZaloForm = ({
               color="primary"
               variant="outlined"
               type="submit"
-              loading={isSubmitting}
               disabled={isEdit}
               startIcon={<SaveIcon />}
             >
@@ -493,7 +483,6 @@ export default CreateMarketingZaloForm;
 CreateMarketingZaloForm.propTypes = {
   setFieldValue: PropTypes.func,
   values: PropTypes.object,
-  isSubmitting: PropTypes.bool,
   typeSourceData: PropTypes.array,
   loading: PropTypes.bool,
   templates: PropTypes.array,

@@ -20,7 +20,6 @@ import { Android12Switch } from "libs/modules/src/lib/muiComponents/inputs/Switc
 const CreateSupportForm = ({
   values,
   setFieldValue,
-  loadingSubmit,
   channelRequest,
   statusTicket,
 }) => {
@@ -327,7 +326,6 @@ const CreateSupportForm = ({
               color="primary"
               variant="contained"
               type="submit"
-              loading={loadingSubmit}
               disabled={isEdit}
               startIcon={<SaveIcon />}
             >
@@ -345,7 +343,6 @@ export default CreateSupportForm;
 CreateSupportForm.propTypes = {
   values: PropTypes.object.isRequired,
   setFieldValue: PropTypes.func,
-  loadingSubmit: PropTypes.bool.isRequired,
   channelRequest: PropTypes.any.isRequired,
   statusTicket: PropTypes.any.isRequired,
 };

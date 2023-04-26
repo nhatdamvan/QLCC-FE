@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Card from "@mui/material/Card";
 import Button from "@mui/material/Button";
 import { Checkbox, useTheme } from "@mui/material";

@@ -1,49 +1,55 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import ChatViewContainer from './ChatViewContainer';
-import { NoUserScreen } from '@crema/modules/apps/Chat';
+import React from "react";
+import PropTypes from "prop-types";
+import ChatViewContainer from "./ChatViewContainer";
+import { NoUserScreen } from "@crema/modules/apps/Chat";
 
-import { styled } from '@mui/material/styles';
-import { Fonts } from '@crema/constants/AppEnums';
+import { styled } from "@mui/material/styles";
+import { Fonts } from "@crema/constants/AppEnums";
+import {
+  useChatActionsContext,
+  useChatContext,
+} from "@crema/context/ChatContextProvider";
 
-const MessagesScreen = styled('div')(() => {
+const MessagesScreen = styled("div")(() => {
   return {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
   };
 });
-const ScrollChatNoUser = styled('div')(({ theme }) => {
+const ScrollChatNoUser = styled("div")(({ theme }) => {
   return {
     fontSize: 18,
     padding: 16,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    textAlign: 'center',
-    height: 'calc(100vh - 169px) !important',
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    textAlign: "center",
+    height: "calc(100vh - 169px) !important",
     fontWeight: Fonts.MEDIUM,
-    [theme.breakpoints.up('lg')]: {
+    [theme.breakpoints.up("lg")]: {
       fontSize: 20,
     },
-    '& .MuiSvgIcon-root': {
-      fontSize: '3rem',
-      color: '#BDBDBD',
-      [theme.breakpoints.up('lg')]: {
-        fontSize: '5rem',
+    "& .MuiSvgIcon-root": {
+      fontSize: "3rem",
+      color: "#BDBDBD",
+      [theme.breakpoints.up("lg")]: {
+        fontSize: "5rem",
       },
     },
   };
 });
 
-const ChatContent = ({ selectedUser, setSelectedUser }) => {
+const ChatContent = () => {
+  const { selectedUser, loadingMessageList } = useChatContext();
+
   return (
     <>
       {selectedUser ? (
         <MessagesScreen>
           <ChatViewContainer
             selectedUser={selectedUser}
-            setSelectedUser={setSelectedUser}
+            loadingMessageList={loadingMessageList}
           />
         </MessagesScreen>
       ) : (
@@ -56,7 +62,4 @@ const ChatContent = ({ selectedUser, setSelectedUser }) => {
 };
 
 export default ChatContent;
-ChatContent.propTypes = {
-  selectedUser: PropTypes.object,
-  setSelectedUser: PropTypes.func,
-};
+ChatContent.propTypes = {};

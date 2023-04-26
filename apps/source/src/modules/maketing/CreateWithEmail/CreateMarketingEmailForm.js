@@ -2,9 +2,11 @@ import AppGridContainer from "@crema/components/AppGridContainer";
 import AppInfoView from "@crema/components/AppInfoView";
 import AppTextField from "@crema/components/AppTextField";
 import { Fonts } from "@crema/constants";
-import { useInfoViewActionsContext } from "@crema/context/InfoViewContextProvider";
+import {
+  useInfoViewActionsContext,
+  useInfoViewContext,
+} from "@crema/context/InfoViewContextProvider";
 import IntlMessages from "@crema/helpers/IntlMessages";
-import jwtAxios from "@crema/services/auth/JWT";
 import SearchIcon from "@mui/icons-material/Search";
 import { LoadingButton } from "@mui/lab";
 import SaveIcon from "@mui/icons-material/Save";
@@ -15,6 +17,7 @@ import {
   FormControl,
   FormControlLabel,
   Grid,
+  LinearProgress,
   MenuItem,
   Select,
   TextField,
@@ -23,7 +26,7 @@ import { DateTimePicker } from "@mui/x-date-pickers";
 import { Form } from "formik";
 import { Android12Switch } from "libs/modules/src/lib/muiComponents/inputs/Switches/Customization";
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useCustomerGroupActionContext,
   useCustomerGroupContext,
@@ -34,13 +37,17 @@ import {
 } from "../../customerList/context/CustomerContextProvider";
 import AppSelectItemDialog from "@crema/components/AppSelectItemDialog";
 import { useIntl } from "react-intl";
+import { getData, postData } from "@crema/hooks/APIHooks";
+import UploadModern from "libs/modules/src/lib/thirdParty/reactDropzone/components/UploadModern";
+import { useDropzone } from "react-dropzone";
+import AppList from "@crema/components/AppList";
+import FileRow from "libs/modules/src/lib/thirdParty/reactDropzone/components/FileRow";
+import jwtAxios from "@crema/services/auth/JWT";
 
 const CreateMarketingEmailForm = ({
   values,
   setFieldValue,
-  isSubmitting,
   typeSourceData,
-  loading,
   templates,
   setSelectedCustomer,
   selectedCustomer,
@@ -71,13 +78,44 @@ const CreateMarketingEmailForm = ({
     setPage: setPageCustomer,
     getData: getCustomers,
   } = useCustomerActionContext();
-
+  const { loading } = useInfoViewContext();
   const infoViewActionsContext = useInfoViewActionsContext();
 
   const [isOpenDialog, setIsOpenDialog] = useState(false);
   const [isOpenDialogGroup, setIsOpenGroupDialog] = useState(false);
-  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState(
+    values.FileExcelImport
+      ? [
+          {
+            id: values.FileExcelImport.id,
+            path: values.FileExcelImport.filename,
+            size: values.FileExcelImport.length,
+          },
+        ]
+      : []
+  );
   const [isEdit, setIsEdit] = useState(values?.id ? true : false);
+
+  const dropzone = useDropzone({
+    noClick: isEdit,
+    multiple: false,
+    accept: { "text/csv": [".csv", ".xlsx", ".xls"] },
+    onDrop: (acceptedFiles) => {
+      setUploadedFiles(
+        acceptedFiles.map((file) =>
+          Object.assign(file, {
+            preview: URL.createObjectURL(file),
+          })
+        )
+      );
+    },
+  });
+
+  useEffect(() => {
+    if (dropzone.acceptedFiles.length) {
+      handleUploadFile(dropzone.acceptedFiles);
+    }
+  }, [dropzone.acceptedFiles]);
 
   const handleOpenDialog = () => {
     setIsOpenDialog(true);
@@ -96,25 +134,59 @@ const CreateMarketingEmailForm = ({
   };
 
   const handlePreview = () => {
-    setLoadingPreview(true);
-    jwtAxios
-      .post("sendPreview", {
-        TemplateId: values.TempalteEmailId,
-        TypeCampaingnsCode: values.TypeCampaingnsCode,
-      })
-      .then((response) => {
-        infoViewActionsContext.showMessage(response.data.message);
+    postData("sendPreview", infoViewActionsContext, {
+      TemplateId: values.TempalteEmailId,
+      TypeCampaingnsCode: values.TypeCampaingnsCode,
+    })
+      .then(({ message }) => {
+        infoViewActionsContext.showMessage(message);
       })
       .catch((error) => {
         infoViewActionsContext.fetchError(error.message);
-      })
-      .finally(() => {
-        setLoadingPreview(false);
       });
   };
 
   const handleChange = (event) => {
     setIsEdit(!event.target.checked);
+  };
+
+  const handleUploadFile = async (file) => {
+    setUploadedFiles(dropzone.acceptedFiles);
+    const formData = new FormData();
+    formData.append("file", file[0]);
+
+    postData(`uploadFile/zaloFile`, infoViewActionsContext, formData, false, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+      .then(({ data }) => {
+        setFieldValue("FileExcelImport", data[0]);
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
+  };
+
+  const onDeleteUploadFile = (file) => {
+    dropzone.acceptedFiles.splice(dropzone.acceptedFiles.indexOf(file), 1);
+    setUploadedFiles([...dropzone.acceptedFiles]);
+  };
+
+  const handleDownload = () => {
+    jwtAxios
+      .get(`downloadFileTemplateCustomer`, { responseType: "blob" })
+      .then((response) => {
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "template_import_customer.xlsx");
+        document.body.appendChild(link);
+        link.click();
+      })
+      .catch((error) => {
+        infoViewActionsContext.fetchError(error.message);
+      });
   };
 
   return (
@@ -187,37 +259,6 @@ const CreateMarketingEmailForm = ({
               disabled={isEdit}
             />
           </Box>
-        </Grid>
-
-        <Grid item xs={12} md={12}>
-          <FormControl fullWidth>
-            <Box
-              component="h6"
-              sx={{
-                fontSize: 14,
-                fontWeight: Fonts.SEMI_BOLD,
-              }}
-            >
-              <IntlMessages id="marketing.object" />
-            </Box>
-            <Select
-              name="Sex"
-              onChange={(event) =>
-                setFieldValue("TypeSourceDataCode", event.target.value)
-              }
-              sx={{
-                width: "100%",
-              }}
-              defaultValue={values.TypeSourceDataCode}
-              disabled={isEdit}
-            >
-              {typeSourceData.map((item) => (
-                <MenuItem key={item.Code} value={item.Code}>
-                  {item.Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
         </Grid>
 
         <Grid item xs={12} md={6}>
@@ -304,12 +345,7 @@ const CreateMarketingEmailForm = ({
         </Grid>
 
         <Grid item xs={12} md={12}>
-          <Box
-            sx={{
-              px: 5,
-              mx: -5,
-            }}
-          >
+          <FormControl fullWidth>
             <Box
               component="h6"
               sx={{
@@ -317,103 +353,214 @@ const CreateMarketingEmailForm = ({
                 fontWeight: Fonts.SEMI_BOLD,
               }}
             >
-              <IntlMessages id="sidebar.ecommerce.customers" />
+              <IntlMessages id="marketing.object" />
             </Box>
-            <Box sx={{ display: "flex" }}>
-              <Autocomplete
-                sx={{
-                  width: "100%",
-                }}
-                multiple
-                id="customer-outlined"
-                readOnly
-                options={
-                  loadingCustomer
-                    ? []
-                    : customers?.map((item) => {
-                        item.Code, item.Name, item.id;
-                      })
-                }
-                getOptionLabel={(option) => option.Name}
-                value={selectedCustomer}
-                filterSelectedOptions
-                freeSolo
-                renderInput={(params) => (
-                  <TextField {...params} variant="outlined" fullWidth />
-                )}
-              />
-              <Button
-                color="primary"
-                variant="contained"
-                sx={{
-                  height: "53px",
-                  ml: 2,
-                }}
-                onClick={handleOpenDialog}
-                disabled={isEdit}
-              >
-                <SearchIcon />
-              </Button>
-            </Box>
-          </Box>
+            <Select
+              name="Sex"
+              onChange={(event) =>
+                setFieldValue("TypeSourceDataCode", event.target.value)
+              }
+              sx={{
+                width: "100%",
+              }}
+              defaultValue={values.TypeSourceDataCode}
+              disabled={isEdit}
+            >
+              {typeSourceData.map((item) => (
+                <MenuItem key={item.Code} value={item.Code}>
+                  {item.Name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Grid>
 
-        <Grid item xs={12} md={12}>
-          <Box
-            sx={{
-              px: 5,
-              mx: -5,
-            }}
-          >
+        {values.TypeSourceDataCode === "crmsource" ? (
+          <>
+            <Grid item xs={12} md={12}>
+              <Box
+                sx={{
+                  px: 5,
+                  mx: -5,
+                }}
+              >
+                <Box
+                  component="h6"
+                  sx={{
+                    fontSize: 14,
+                    fontWeight: Fonts.SEMI_BOLD,
+                  }}
+                >
+                  <IntlMessages id="sidebar.ecommerce.customers" />
+                </Box>
+                <Box sx={{ display: "flex" }}>
+                  <Autocomplete
+                    sx={{
+                      width: "100%",
+                    }}
+                    multiple
+                    id="customer-outlined"
+                    readOnly
+                    options={
+                      loadingCustomer
+                        ? []
+                        : customers?.map((item) => {
+                            item.Code, item.Name, item.id;
+                          })
+                    }
+                    getOptionLabel={(option) => option.Name}
+                    value={selectedCustomer}
+                    filterSelectedOptions
+                    freeSolo
+                    renderInput={(params) => (
+                      <TextField {...params} variant="outlined" fullWidth />
+                    )}
+                  />
+                  <Button
+                    color="primary"
+                    variant="contained"
+                    sx={{
+                      height: "53px",
+                      ml: 2,
+                    }}
+                    onClick={handleOpenDialog}
+                    disabled={isEdit}
+                  >
+                    <SearchIcon />
+                  </Button>
+                </Box>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} md={12}>
+              <Box
+                sx={{
+                  px: 5,
+                  mx: -5,
+                }}
+              >
+                <Box
+                  component="h6"
+                  sx={{
+                    fontSize: 14,
+                    fontWeight: Fonts.SEMI_BOLD,
+                  }}
+                >
+                  <IntlMessages id="sidebar.pages.userList.customergroup" />
+                </Box>
+                <Box sx={{ display: "flex" }}>
+                  <Autocomplete
+                    sx={{
+                      width: "100%",
+                    }}
+                    multiple
+                    id="customer-group-outlined"
+                    readOnly
+                    options={
+                      loadingGroup
+                        ? []
+                        : customerGroup?.map((item) => {
+                            item.Code, item.Name, item.id;
+                          })
+                    }
+                    getOptionLabel={(option) => option.Name}
+                    value={selectedCustomerGroup}
+                    filterSelectedOptions
+                    freeSolo
+                    renderInput={(params) => (
+                      <TextField {...params} variant="outlined" fullWidth />
+                    )}
+                  />
+                  <Button
+                    color="primary"
+                    variant="contained"
+                    sx={{
+                      height: "53px",
+                      ml: 2,
+                    }}
+                    onClick={handleOpenGroupDialog}
+                    disabled={isEdit}
+                  >
+                    <SearchIcon />
+                  </Button>
+                </Box>
+              </Box>
+            </Grid>
+          </>
+        ) : (
+          <Grid item xs={12} md={12}>
             <Box
-              component="h6"
               sx={{
-                fontSize: 14,
-                fontWeight: Fonts.SEMI_BOLD,
+                px: 5,
+                mx: -5,
               }}
             >
-              <IntlMessages id="sidebar.pages.userList.customergroup" />
-            </Box>
-            <Box sx={{ display: "flex" }}>
-              <Autocomplete
+              <Box
+                component="h6"
                 sx={{
-                  width: "100%",
+                  fontSize: 14,
+                  fontWeight: Fonts.SEMI_BOLD,
                 }}
-                multiple
-                id="customer-group-outlined"
-                readOnly
-                options={
-                  loadingGroup
-                    ? []
-                    : customerGroup?.map((item) => {
-                        item.Code, item.Name, item.id;
-                      })
-                }
-                getOptionLabel={(option) => option.Name}
-                value={selectedCustomerGroup}
-                filterSelectedOptions
-                freeSolo
-                renderInput={(params) => (
-                  <TextField {...params} variant="outlined" fullWidth />
-                )}
-              />
-              <Button
+              >
+                <IntlMessages id="common.file" />
+              </Box>
+              {loading ? (
+                <LinearProgress color="inherit" />
+              ) : (
+                <>
+                  <UploadModern
+                    uploadText="Drag n drop some files here, or click to select files"
+                    dropzone={dropzone}
+                  />
+                  <aside>
+                    <AppList
+                      data={uploadedFiles}
+                      renderRow={(file, index) => (
+                        <FileRow
+                          key={index + file.path}
+                          file={file}
+                          onDeleteUploadFile={
+                            isEdit ? () => {} : onDeleteUploadFile
+                          }
+                        />
+                      )}
+                    />
+                  </aside>
+                </>
+              )}
+            </Box>
+          </Grid>
+        )}
+
+        <Grid item xs={12} md={6}>
+          <Box
+            sx={{
+              pt: 4,
+              mx: -1,
+              textAlign: "left",
+            }}
+          >
+            {values.TypeSourceDataCode === "crmsource" ? (
+              <></>
+            ) : (
+              <LoadingButton
+                sx={{
+                  position: "relative",
+                  minWidth: 100,
+                  m: 4,
+                }}
                 color="primary"
                 variant="contained"
-                sx={{
-                  height: "53px",
-                  ml: 2,
-                }}
-                onClick={handleOpenGroupDialog}
                 disabled={isEdit}
+                onClick={handleDownload}
               >
-                <SearchIcon />
-              </Button>
-            </Box>
+                <IntlMessages id="common.downloadTemplate" />
+              </LoadingButton>
+            )}
           </Box>
         </Grid>
 
-        <Grid item xs={12} md={12}>
+        <Grid item xs={12} md={6}>
           <Box
             sx={{
               pt: 4,
@@ -429,7 +576,6 @@ const CreateMarketingEmailForm = ({
               }}
               variant="contained"
               color="secondary"
-              loading={loadingPreview}
               onClick={handlePreview}
               disabled={isEdit}
               startIcon={<SaveIcon />}
@@ -445,7 +591,6 @@ const CreateMarketingEmailForm = ({
               color="primary"
               variant="contained"
               type="submit"
-              loading={isSubmitting}
               disabled={isEdit}
               startIcon={<SaveIcon />}
             >
@@ -499,7 +644,6 @@ export default CreateMarketingEmailForm;
 CreateMarketingEmailForm.propTypes = {
   setFieldValue: PropTypes.func,
   values: PropTypes.object,
-  isSubmitting: PropTypes.bool,
   typeSourceData: PropTypes.array,
   loading: PropTypes.bool,
   templates: PropTypes.array,
